@@ -1,0 +1,119 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { formatPostDate, getAllPosts } from '../../lib/posts';
+
+const posts = await getAllPosts();
+---
+
+<Layout title="글 목록 | gjsk132 blog" description="gjsk132 blog posts">
+	<main class="page">
+		<nav>
+			<a href="/">홈</a>
+		</nav>
+
+		<header>
+			<h1>글 목록</h1>
+			<p>content/post 폴더의 Markdown 글이 이곳에 표시됩니다.</p>
+		</header>
+
+		{
+			posts.length > 0 ? (
+				<ul class="post-list">
+					{posts.map((post) => (
+						<li>
+							<a href={`/blog/${post.slug}/`}>
+								<div>
+									<h2>{post.frontmatter.title ?? post.slug}</h2>
+									{post.frontmatter.description && <p>{post.frontmatter.description}</p>}
+								</div>
+								{post.frontmatter.pubDate && (
+									<time datetime={new Date(post.frontmatter.pubDate).toISOString()}>
+										{formatPostDate(post.frontmatter.pubDate)}
+									</time>
+								)}
+							</a>
+						</li>
+					))}
+				</ul>
+			) : (
+				<p class="empty">아직 등록된 글이 없습니다.</p>
+			)
+		}
+	</main>
+</Layout>
+
+<style>
+	.page {
+		width: min(880px, calc(100% - 32px));
+		margin: 0 auto;
+		padding: 56px 0;
+	}
+
+	nav {
+		margin-bottom: 32px;
+	}
+
+	nav a {
+		color: #315f4d;
+		font-weight: 700;
+		text-decoration: none;
+	}
+
+	header {
+		margin-bottom: 36px;
+	}
+
+	h1 {
+		margin: 0 0 12px;
+		color: #172018;
+		font-size: 40px;
+	}
+
+	header p,
+	.empty {
+		margin: 0;
+		color: #66736b;
+		line-height: 1.7;
+	}
+
+	.post-list {
+		display: grid;
+		gap: 0;
+		padding: 0;
+		margin: 0;
+		list-style: none;
+	}
+
+	.post-list a {
+		display: flex;
+		justify-content: space-between;
+		gap: 24px;
+		padding: 24px 0;
+		border-bottom: 1px solid #dfe4dd;
+		text-decoration: none;
+	}
+
+	h2 {
+		margin: 0;
+		font-size: 22px;
+	}
+
+	.post-list p {
+		margin: 8px 0 0;
+		color: #66736b;
+		line-height: 1.6;
+	}
+
+	time {
+		flex: 0 0 auto;
+		color: #66736b;
+		font-size: 14px;
+	}
+
+	@media (max-width: 640px) {
+		.post-list a {
+			flex-direction: column;
+			gap: 8px;
+		}
+	}
+</style>
