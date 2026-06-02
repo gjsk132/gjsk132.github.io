@@ -1,6 +1,7 @@
 import path from 'node:path';
 
 const imagePattern = /!\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+const urlPattern = /^[a-z][a-z\d+.-]*:|^\/|^#|^\.\.\/asset\//i;
 
 function assetUrlFor(filePath, imageName) {
 	const parsed = path.parse(filePath);
@@ -59,6 +60,10 @@ function transformNode(node, filePath) {
 			const converted = convertTextNode(child, filePath);
 			nextChildren.push(...(converted ?? [child]));
 			continue;
+		}
+
+		if (child.type === 'image' && child.url && !urlPattern.test(child.url)) {
+			child.url = assetUrlFor(filePath, child.url);
 		}
 
 		transformNode(child, filePath);

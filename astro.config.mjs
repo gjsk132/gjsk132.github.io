@@ -7,6 +7,9 @@ import { remarkObsidianImages } from './src/lib/remarkObsidianImages.mjs';
 export default defineConfig({
 	site: 'https://gjsk132.github.io',
 	markdown: {
+		shikiConfig: {
+			theme: 'github-light',
+		},
 		processor: unified({
 			remarkPlugins: [remarkObsidianImages],
 		}),

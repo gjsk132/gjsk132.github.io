@@ -1,119 +1,215 @@
 ---
+import BlogLayout from '../../components/BlogLayout.astro';
 import Layout from '../../layouts/Layout.astro';
-import { formatPostDate, getAllPosts } from '../../lib/posts';
+import {
+	formatPostDate,
+	getAllPosts,
+	getPostCategories,
+	getPostCategoryCounts,
+	getPostTags,
+} from '../../lib/posts';
 
 const posts = await getAllPosts();
+const categories = getPostCategories(posts);
+const categoryCounts = getPostCategoryCounts(posts);
+const tags = getPostTags(posts);
+
+const groupedPosts = posts.reduce<Record<string, typeof posts>>((groups, post) => {
+	const category = post.frontmatter.category ?? post.frontmatter.categories?.[0] ?? 'none';
+	groups[category] ??= [];
+	groups[category].push(post);
+	return groups;
+}, {});
+
+function groupLabel(category: string) {
+	if (category === 'none') return category;
+	return category.startsWith('#') ? category : `#${category}`;
+}
+
+function postTags(post: (typeof posts)[number]) {
+	return post.frontmatter.tags ?? [];
+}
 ---
 
 <Layout title="글 목록 | gjsk132 blog" description="gjsk132 blog posts">
-	<main class="page">
-		<nav>
-			<a href="/">홈</a>
-		</nav>
+	<BlogLayout categories={categories} categoryCounts={categoryCounts} tags={tags} postCount={posts.length}>
+		<section class="post-card">
+			{
+				posts.length > 0 ? (
+					Object.entries(groupedPosts).map(([category, categoryPosts]) => (
+						<section class="post-group" aria-labelledby={`category-${category}`}>
+							<h2 id={`category-${category}`}>
+								<span>{groupLabel(category)}</span>
+								<strong>{categoryPosts.length}</strong>
+							</h2>
 
-		<header>
-			<h1>글 목록</h1>
-			<p>content/post 폴더의 Markdown 글이 이곳에 표시됩니다.</p>
-		</header>
-
-		{
-			posts.length > 0 ? (
-				<ul class="post-list">
-					{posts.map((post) => (
-						<li>
-							<a href={`/blog/${post.slug}/`}>
-								<div>
-									<h2>{post.frontmatter.title ?? post.slug}</h2>
-									{post.frontmatter.description && <p>{post.frontmatter.description}</p>}
-								</div>
-								{post.frontmatter.pubDate && (
-									<time datetime={new Date(post.frontmatter.pubDate).toISOString()}>
-										{formatPostDate(post.frontmatter.pubDate)}
-									</time>
-								)}
-							</a>
-						</li>
-					))}
-				</ul>
-			) : (
-				<p class="empty">아직 등록된 글이 없습니다.</p>
-			)
-		}
-	</main>
+							<ul class="post-list">
+								{categoryPosts.map((post) => (
+									<li>
+										<a href={`/blog/${post.slug}/`}>
+											<h3>{post.frontmatter.title ?? post.slug}</h3>
+											{post.frontmatter.description && <p>{post.frontmatter.description}</p>}
+											<div class="post-meta">
+												<span>{category}</span>
+												{post.frontmatter.pubDate && (
+													<>
+														<i aria-hidden="true"></i>
+														<time datetime={new Date(post.frontmatter.pubDate).toISOString()}>
+															{formatPostDate(post.frontmatter.pubDate)}
+														</time>
+													</>
+												)}
+												{postTags(post).length > 0 && (
+													<>
+														<i aria-hidden="true"></i>
+														<div class="post-tags">
+															{postTags(post).map((tag) => <em>{tag}</em>)}
+														</div>
+													</>
+												)}
+											</div>
+										</a>
+									</li>
+								))}
+							</ul>
+						</section>
+					))
+				) : (
+					<p>아직 등록된 글이 없습니다.</p>
+				)
+			}
+		</section>
+	</BlogLayout>
 </Layout>
 
 <style>
-	.page {
-		width: min(880px, calc(100% - 32px));
-		margin: 0 auto;
-		padding: 56px 0;
+	.post-card {
+		padding: 22px 20px 30px;
+		background: var(--panel);
+		border-radius: 24px;
+		box-shadow: 0 20px 48px rgba(20, 24, 40, 0.08);
+		border: 1px solid rgba(255, 255, 255, 0.9);
 	}
 
-	nav {
-		margin-bottom: 32px;
+	.post-group {
+		padding: 4px 0 0;
 	}
 
-	nav a {
-		color: #315f4d;
-		font-weight: 700;
-		text-decoration: none;
+	.post-group + .post-group {
+		margin-top: 30px;
 	}
 
-	header {
-		margin-bottom: 36px;
-	}
-
-	h1 {
-		margin: 0 0 12px;
-		color: #172018;
-		font-size: 40px;
-	}
-
-	header p,
-	.empty {
+	.post-group h2 {
+		display: flex;
+		gap: 8px;
+		align-items: baseline;
 		margin: 0;
-		color: #66736b;
-		line-height: 1.7;
+		padding: 0 0 20px;
+		border-bottom: 1px solid var(--line);
+		font-size: 23px;
+		font-weight: 800;
+		line-height: 1.2;
+	}
+
+	.post-group h2 strong {
+		color: var(--accent);
+		font-size: 23px;
 	}
 
 	.post-list {
 		display: grid;
-		gap: 0;
+		gap: 14px;
+		margin: 20px 0 0;
 		padding: 0;
-		margin: 0;
 		list-style: none;
 	}
 
 	.post-list a {
-		display: flex;
-		justify-content: space-between;
-		gap: 24px;
-		padding: 24px 0;
-		border-bottom: 1px solid #dfe4dd;
+		display: block;
+		padding: 22px 18px;
+		border: 1px solid rgba(255, 255, 255, 0.82);
+		border-radius: 18px;
+		background: var(--panel-strong);
+		color: var(--text);
 		text-decoration: none;
+		box-shadow: none;
+		transition:
+			border-color 160ms ease,
+			box-shadow 160ms ease,
+			transform 160ms ease;
 	}
 
-	h2 {
-		margin: 0;
-		font-size: 22px;
+	.post-list a:hover,
+	.post-list a:focus-visible {
+		border-color: color-mix(in srgb, var(--accent) 24%, white);
+		box-shadow: 0 14px 30px rgba(45, 84, 255, 0.09);
+		transform: translateY(-1px);
+		outline: 0;
+	}
+
+	h3 {
+		margin: 0 0 10px;
+		font-size: 16px;
+		font-weight: 700;
+		text-decoration: underline;
+		text-underline-offset: 3px;
 	}
 
 	.post-list p {
-		margin: 8px 0 0;
-		color: #66736b;
+		display: -webkit-box;
+		margin: 0 0 10px;
+		color: var(--muted);
+		font-size: 12px;
 		line-height: 1.6;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	.post-meta {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+		color: var(--muted);
+		font-size: 12px;
+	}
+
+	.post-meta i {
+		width: 1px;
+		height: 12px;
+		background: var(--line);
 	}
 
 	time {
-		flex: 0 0 auto;
-		color: #66736b;
-		font-size: 14px;
+		color: var(--muted);
+		font-size: 12px;
 	}
 
-	@media (max-width: 640px) {
-		.post-list a {
-			flex-direction: column;
-			gap: 8px;
+	.post-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 5px;
+	}
+
+	.post-tags em {
+		padding: 3px 7px;
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--accent) 10%, transparent);
+		color: var(--accent);
+		font-size: 11px;
+		font-style: normal;
+		font-weight: 700;
+	}
+
+	@media (max-width: 900px) {
+		.post-card {
+			padding: 24px 18px;
+		}
+
+		.post-group h2,
+		.post-group h2 strong {
+			font-size: 20px;
 		}
 	}
 </style>

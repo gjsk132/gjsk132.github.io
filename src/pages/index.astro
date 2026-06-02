@@ -1,157 +1,981 @@
 ---
+import BlogLayout from '../components/BlogLayout.astro';
 import Layout from '../layouts/Layout.astro';
-import { formatPostDate, getAllPosts } from '../lib/posts';
+import {
+	formatPostDate,
+	getAllPosts,
+	getPostCategories,
+	getPostCategoryCounts,
+	getPostDate,
+	getPostTags,
+} from '../lib/posts';
 
 const posts = await getAllPosts();
+const categories = getPostCategories(posts);
+const categoryCounts = getPostCategoryCounts(posts);
+const tags = getPostTags(posts);
+
+function postCategory(post: (typeof posts)[number]) {
+	return post.frontmatter.category ?? post.frontmatter.categories?.[0] ?? 'none';
+}
+
+function postTags(post: (typeof posts)[number]) {
+	return post.frontmatter.tags ?? [];
+}
+
+function postYear(post: (typeof posts)[number]) {
+	const date = getPostDate(post);
+	return date ? new Date(date).getFullYear().toString() : '';
+}
+
+function postMonthDay(post: (typeof posts)[number]) {
+	const date = getPostDate(post);
+	if (!date) return '';
+
+	return new Intl.DateTimeFormat('ko-KR', {
+		month: '2-digit',
+		day: '2-digit',
+	})
+		.format(new Date(date))
+		.replace(/\. /g, '-')
+		.replace('.', '');
+}
+
+function plainPostBody(post: (typeof posts)[number]) {
+	return post.body
+		.replace(/```[\s\S]*?```/g, ' ')
+		.replace(/!\[\[[^\]]+\]\]/g, ' ')
+		.replace(/!\[[^\]]*\]\([^)]+\)/g, ' ')
+		.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+		.replace(/[#>*_`~|[\]-]/g, ' ')
+		.replace(/\s+/g, ' ')
+		.trim();
+}
+
+function searchPreview(post: (typeof posts)[number]) {
+	return plainPostBody(post) || post.excerpt;
+}
 ---
 
 <Layout title="gjsk132 blog" description="gjsk132's blog">
-	<main class="home">
-		<header class="intro">
-			<p class="eyebrow">gjsk132.github.io</p>
-			<h1>기록을 차곡차곡 쌓는 블로그</h1>
-			<p class="summary">
-				Obsidian의 Markdown 글을 Astro가 읽어 GitHub Pages에 정적 사이트로 배포합니다.
-			</p>
-		</header>
+	<BlogLayout categories={categories} categoryCounts={categoryCounts} tags={tags} postCount={posts.length}>
+		<section class="home-post-frame">
+			<section class="search-panel" data-search-panel hidden>
+				<h1 class="search-title">Search</h1>
+				<label class="search-field">
+					<svg aria-hidden="true" viewBox="0 0 24 24">
+						<path d="m20.7 19.3-4.2-4.2a7 7 0 1 0-1.4 1.4l4.2 4.2 1.4-1.4ZM5 11a6 6 0 1 1 12 0 6 6 0 0 1-12 0Z" />
+					</svg>
+					<input type="search" placeholder="검색어를 입력하세요" data-search-input />
+				</label>
+				<div class="search-results" data-search-results>
+					{
+						posts.map((post) => (
+							<a
+								href={`/blog/${post.slug}/`}
+								data-search-result
+								data-search-title={(post.frontmatter.title ?? post.slug).toLowerCase()}
+								data-search-body={plainPostBody(post).toLowerCase()}
+								data-result-title={post.frontmatter.title ?? post.slug}
+								data-result-preview={searchPreview(post)}
+								hidden
+							>
+								<strong data-result-title-text>{post.frontmatter.title ?? post.slug}</strong>
+								<p data-result-preview-text>{searchPreview(post)}</p>
+								<div class="search-result-meta">
+									<span>{postCategory(post)}</span>
+									{postTags(post).map((tag) => <span>#{tag}</span>)}
+								</div>
+							</a>
+						))
+					}
+				</div>
+				<p class="empty-search" data-empty-search hidden>검색 결과가 없습니다.</p>
+			</section>
 
-		<section class="posts" aria-labelledby="posts-title">
-			<div class="section-header">
-				<h2 id="posts-title">최근 글</h2>
-				<a href="/blog/">전체 보기</a>
-			</div>
+			<h1 class="home-title" data-filter-title>
+				<span class="home-title-text">
+					<span data-post-list-title>HOME</span>
+					<strong data-visible-post-count>{posts.length}</strong>
+				</span>
+				<span class="page-size-control" aria-label="페이지당 게시글 수">
+					<button type="button" data-page-size-option="5" aria-pressed="true">5</button>
+					<button type="button" data-page-size-option="10" aria-pressed="false">10</button>
+					<button type="button" data-page-size-option="20" aria-pressed="false">20</button>
+				</span>
+			</h1>
 
 			{
 				posts.length > 0 ? (
-					<ul>
-						{posts.slice(0, 5).map((post) => (
-							<li>
+					<ul class="home-post-list" data-post-list data-view="posts">
+						{posts.map((post) => (
+							<li
+								data-post-item
+								data-category={postCategory(post)}
+								data-tags={postTags(post).join('|')}
+								data-year={postYear(post)}
+							>
+								<div class="timeline-date" aria-hidden="true">
+									<strong data-timeline-year></strong>
+									<span>{postMonthDay(post)}</span>
+								</div>
 								<a href={`/blog/${post.slug}/`}>
-									<span>{post.frontmatter.title ?? post.slug}</span>
-									{post.frontmatter.pubDate && (
-										<time datetime={new Date(post.frontmatter.pubDate).toISOString()}>
-											{formatPostDate(post.frontmatter.pubDate)}
-										</time>
-									)}
+									<h2 class="home-post-title">{post.frontmatter.title ?? post.slug}</h2>
+									{post.excerpt && <p>{post.excerpt}</p>}
+									<div class="home-post-meta">
+										<span>{postCategory(post)}</span>
+										{getPostDate(post) && (
+											<>
+												<i aria-hidden="true"></i>
+												<time datetime={new Date(getPostDate(post)!).toISOString()}>
+													{formatPostDate(getPostDate(post))}
+												</time>
+											</>
+										)}
+										{post.frontmatter.tags?.length > 0 && (
+											<>
+												<i aria-hidden="true"></i>
+												<div class="home-post-tags">
+													{post.frontmatter.tags.map((tag) => <em>{tag}</em>)}
+												</div>
+											</>
+										)}
+									</div>
 								</a>
 							</li>
 						))}
 					</ul>
 				) : (
-					<p class="empty">아직 등록된 글이 없습니다. content/post 폴더에 Markdown 파일을 추가해 주세요.</p>
+					<p>아직 등록된 글이 없습니다. content/post 폴더에 Markdown 파일을 추가해 주세요.</p>
 				)
 			}
+			<p class="empty-filter" data-empty-filter hidden>선택한 조건에 등록된 글이 없습니다.</p>
+			<nav class="pagination" aria-label="게시글 페이지" data-pagination hidden>
+				<button type="button" data-page-prev aria-label="이전 페이지">Prev</button>
+				<span data-page-status></span>
+				<button type="button" data-page-next aria-label="다음 페이지">Next</button>
+			</nav>
 		</section>
-	</main>
+	</BlogLayout>
 </Layout>
 
+<script>
+	const selectedCategory = new URLSearchParams(window.location.search).get('category');
+	const selectedTag = new URLSearchParams(window.location.search).get('tag');
+	const shouldOpenSearch = new URLSearchParams(window.location.search).has('search');
+	const filterTitle = document.querySelector<HTMLElement>('[data-filter-title]');
+	const postListTitle = document.querySelector<HTMLElement>('[data-post-list-title]');
+	const postList = document.querySelector<HTMLElement>('[data-post-list]');
+	const postItems = Array.from(document.querySelectorAll<HTMLElement>('[data-post-item]'));
+	const visiblePostCount = document.querySelector<HTMLElement>('[data-visible-post-count]');
+	const emptyFilter = document.querySelector<HTMLElement>('[data-empty-filter]');
+	const viewButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-view-button]'));
+	const searchPanel = document.querySelector<HTMLElement>('[data-search-panel]');
+	const searchInput = document.querySelector<HTMLInputElement>('[data-search-input]');
+	const searchResults = Array.from(document.querySelectorAll<HTMLElement>('[data-search-result]'));
+	const emptySearch = document.querySelector<HTMLElement>('[data-empty-search]');
+	const pageSizeButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-page-size-option]'));
+	const pagination = document.querySelector<HTMLElement>('[data-pagination]');
+	const pagePrev = document.querySelector<HTMLButtonElement>('[data-page-prev]');
+	const pageNext = document.querySelector<HTMLButtonElement>('[data-page-next]');
+	const pageStatus = document.querySelector<HTMLElement>('[data-page-status]');
+	let searchQuery = '';
+	let currentViewMode = 'posts';
+	let currentPage = 1;
+	let pageSize = Number(window.localStorage.getItem('postPageSize') ?? '5');
+
+	if (![5, 10, 20].includes(pageSize)) {
+		pageSize = 5;
+	}
+
+	function updateTimelineYears() {
+		let currentYear = '';
+		let lastVisibleItem: HTMLElement | undefined;
+
+		for (const item of postItems) {
+			delete item.dataset.lastVisible;
+
+			const yearLabel = item.querySelector<HTMLElement>('[data-timeline-year]');
+			if (!yearLabel) continue;
+
+			if (item.hidden) {
+				yearLabel.textContent = '';
+				continue;
+			}
+
+			const year = item.dataset.year ?? '';
+			yearLabel.textContent = year && year !== currentYear ? year : '';
+			if (year) currentYear = year;
+			lastVisibleItem = item;
+		}
+
+		if (lastVisibleItem) {
+			lastVisibleItem.dataset.lastVisible = 'true';
+		}
+	}
+
+	function matchesRouteFilter(item: HTMLElement) {
+		if (!selectedCategory && !selectedTag) return true;
+
+		const itemTags = item.dataset.tags?.split('|').filter(Boolean) ?? [];
+		return selectedCategory
+			? item.dataset.category === selectedCategory
+			: itemTags.includes(selectedTag ?? '');
+	}
+
+	function applyPostFilters() {
+		const matchedItems = postItems.filter((item) => matchesRouteFilter(item));
+		const visibleCount = matchedItems.length;
+		const shouldPaginate = currentViewMode === 'posts';
+		const totalPages = shouldPaginate ? Math.max(1, Math.ceil(visibleCount / pageSize)) : 1;
+
+		currentPage = Math.min(currentPage, totalPages);
+		const pageStart = (currentPage - 1) * pageSize;
+		const pageEnd = pageStart + pageSize;
+
+		for (const item of postItems) {
+			const matchedIndex = matchedItems.indexOf(item);
+			const isVisible =
+				matchedIndex >= 0 && (!shouldPaginate || (matchedIndex >= pageStart && matchedIndex < pageEnd));
+			item.hidden = !isVisible;
+		}
+
+		if (visiblePostCount) {
+			visiblePostCount.textContent = String(visibleCount);
+		}
+
+		if (emptyFilter) {
+			emptyFilter.hidden = visibleCount > 0;
+		}
+
+		if (pagination) {
+			pagination.hidden = !shouldPaginate || visibleCount <= pageSize;
+		}
+
+		if (pageStatus) {
+			pageStatus.textContent = `${currentPage} / ${totalPages}`;
+		}
+
+		if (pagePrev) {
+			pagePrev.disabled = currentPage <= 1;
+		}
+
+		if (pageNext) {
+			pageNext.disabled = currentPage >= totalPages;
+		}
+
+		updateTimelineYears();
+	}
+
+	function applySearchResults() {
+		let visibleCount = 0;
+
+		for (const result of searchResults) {
+			const title = result.dataset.searchTitle ?? '';
+			const body = result.dataset.searchBody ?? '';
+			const isVisible = Boolean(searchQuery) && (title.includes(searchQuery) || body.includes(searchQuery));
+			const resultTitle = result.querySelector<HTMLElement>('[data-result-title-text]');
+			const resultPreview = result.querySelector<HTMLElement>('[data-result-preview-text]');
+
+			if (resultTitle) {
+				resultTitle.innerHTML = highlightText(result.dataset.resultTitle ?? '', searchQuery);
+			}
+
+			if (resultPreview) {
+				resultPreview.innerHTML = highlightText(result.dataset.resultPreview ?? '', searchQuery);
+			}
+
+			result.hidden = !isVisible;
+			if (isVisible) visibleCount += 1;
+		}
+
+		if (emptySearch) {
+			emptySearch.hidden = !searchQuery || visibleCount > 0;
+		}
+
+		if (searchPanel) {
+			searchPanel.dataset.searchActive = String(Boolean(searchQuery));
+		}
+	}
+
+	function escapeHtml(value: string) {
+		return value.replace(/[&<>"']/g, (char) => {
+			const entities: Record<string, string> = {
+				'&': '&amp;',
+				'<': '&lt;',
+				'>': '&gt;',
+				'"': '&quot;',
+				"'": '&#39;',
+			};
+			return entities[char];
+		});
+	}
+
+	function escapeRegExp(value: string) {
+		return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	}
+
+	function highlightText(value: string, query: string) {
+		const escapedValue = escapeHtml(value);
+		if (!query) return escapedValue;
+
+		return escapedValue.replace(
+			new RegExp(`(${escapeRegExp(escapeHtml(query))})`, 'gi'),
+			'<mark>$1</mark>',
+		);
+	}
+
+	function setViewMode(viewMode: string) {
+		const nextViewMode = viewMode === 'timeline' ? 'timeline' : 'posts';
+		currentViewMode = nextViewMode;
+
+		if (postList) {
+			postList.dataset.view = nextViewMode;
+		}
+
+		if (filterTitle) {
+			filterTitle.dataset.viewMode = nextViewMode;
+		}
+
+		for (const button of viewButtons) {
+			button.setAttribute('aria-pressed', String(button.dataset.viewButton === nextViewMode));
+		}
+
+		window.localStorage.setItem('postViewMode', nextViewMode);
+		applyPostFilters();
+	}
+
+	setViewMode(window.localStorage.getItem('postViewMode') ?? 'posts');
+
+	for (const button of viewButtons) {
+		button.addEventListener('click', () => {
+			currentPage = 1;
+			setViewMode(button.dataset.viewButton ?? 'posts');
+		});
+	}
+
+	for (const button of pageSizeButtons) {
+		button.setAttribute('aria-pressed', String(Number(button.dataset.pageSizeOption) === pageSize));
+		button.addEventListener('click', () => {
+			pageSize = Number(button.dataset.pageSizeOption ?? '5');
+			currentPage = 1;
+			window.localStorage.setItem('postPageSize', String(pageSize));
+
+			for (const pageSizeButton of pageSizeButtons) {
+				pageSizeButton.setAttribute(
+					'aria-pressed',
+					String(Number(pageSizeButton.dataset.pageSizeOption) === pageSize),
+				);
+			}
+
+			applyPostFilters();
+		});
+	}
+
+	pagePrev?.addEventListener('click', () => {
+		currentPage = Math.max(1, currentPage - 1);
+		applyPostFilters();
+	});
+
+	pageNext?.addEventListener('click', () => {
+		currentPage += 1;
+		applyPostFilters();
+	});
+
+	if (selectedCategory || selectedTag) {
+		currentPage = 1;
+
+		if (filterTitle) {
+			filterTitle.hidden = false;
+		}
+
+		if (postListTitle) {
+			postListTitle.textContent = selectedCategory ?? `#${selectedTag}`;
+		}
+	}
+
+	function openSearchPanel() {
+		if (searchPanel) {
+			searchPanel.hidden = false;
+		}
+		searchInput?.focus();
+	}
+
+	window.addEventListener('site-search-open', (event) => {
+		event.preventDefault();
+		openSearchPanel();
+	});
+
+	searchInput?.addEventListener('input', () => {
+		searchQuery = searchInput.value.trim().toLowerCase();
+		applySearchResults();
+	});
+
+	applyPostFilters();
+	applySearchResults();
+
+	if (shouldOpenSearch) {
+		openSearchPanel();
+	}
+</script>
+
 <style>
-	.home {
-		width: min(880px, calc(100% - 32px));
-		margin: 0 auto;
-		padding: 72px 0;
+	.home-post-frame {
+		padding: 28px 22px 40px;
+		background: rgba(255, 255, 255, 0.18);
+		border: 1px solid rgba(255, 255, 255, 0.58);
+		border-radius: 20px;
+		box-shadow: 0 20px 48px rgba(20, 24, 40, 0.08);
 	}
 
-	.intro {
-		padding-bottom: 40px;
-		border-bottom: 1px solid #d9ded8;
+	.search-panel {
+		margin-bottom: 20px;
 	}
 
-	.eyebrow {
+	.search-panel[hidden] {
+		display: none;
+	}
+
+	.home-post-frame:has(.search-panel:not([hidden])) .home-title,
+	.home-post-frame:has(.search-panel:not([hidden])) .home-post-list,
+	.home-post-frame:has(.search-panel:not([hidden])) .empty-filter,
+	.home-post-frame:has(.search-panel:not([hidden])) .pagination {
+		display: none;
+	}
+
+	.search-title {
 		margin: 0 0 14px;
-		color: #51604f;
-		font-size: 14px;
+		padding-bottom: 18px;
+		border-bottom: 1px solid var(--line);
+		font-size: 23px;
+		font-weight: 800;
+		line-height: 1.25;
+	}
+
+	.search-field {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		width: min(450px, 100%);
+		height: 42px;
+		padding: 0 14px;
+		border: 1px solid rgba(255, 255, 255, 0.72);
+		border-radius: 20px;
+		background: var(--panel-strong);
+		box-shadow: var(--shadow);
+		transition:
+			border-color 160ms ease,
+			box-shadow 160ms ease;
+	}
+
+	.search-field:focus-within {
+		border-color: color-mix(in srgb, var(--accent) 32%, white);
+		box-shadow: 0 14px 32px rgba(45, 84, 255, 0.1);
+	}
+
+	.search-field svg {
+		width: 16px;
+		height: 16px;
+		flex: 0 0 auto;
+		fill: var(--muted);
+	}
+
+	.search-field input {
+		width: 100%;
+		min-width: 0;
+		border: 0;
+		background: transparent;
+		color: var(--text);
+		font-size: 13px;
+		outline: 0;
+	}
+
+	.search-results {
+		display: grid;
+		gap: 10px;
+		margin-top: 12px;
+	}
+
+	.search-results a {
+		display: block;
+		padding: 18px 20px;
+		border-radius: 20px;
+		background: #fff;
+		color: var(--text);
+		text-decoration: none;
+		box-shadow: var(--shadow);
+		transition:
+			box-shadow 160ms ease,
+			transform 160ms ease;
+	}
+
+	.search-results a:hover,
+	.search-results a:focus-visible {
+		box-shadow: 0 14px 32px rgba(45, 84, 255, 0.1);
+		transform: translateY(-1px);
+		outline: 0;
+	}
+
+	.search-results a[hidden] {
+		display: none;
+	}
+
+	.search-results strong {
+		display: block;
+		margin-bottom: 7px;
+		font-size: 15px;
+		line-height: 1.35;
+	}
+
+	.search-results p {
+		display: -webkit-box;
+		margin: 0 0 12px;
+		color: var(--muted);
+		font-size: 12px;
+		line-height: 1.55;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	.search-results :global(mark) {
+		padding: 0 2px;
+		border-radius: 4px;
+		background: color-mix(in srgb, var(--accent) 14%, transparent);
+		color: var(--accent);
 		font-weight: 700;
 	}
 
-	h1 {
-		max-width: 720px;
-		margin: 0;
-		color: #172018;
-		font-size: 48px;
-		line-height: 1.12;
+	.search-result-meta {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 8px;
+		color: var(--muted);
+		font-size: 11px;
 	}
 
-	.summary {
-		max-width: 620px;
-		margin: 20px 0 0;
-		color: #4c5a50;
-		font-size: 18px;
-		line-height: 1.7;
+	.search-result-meta span {
+		color: var(--muted);
+		font-size: 11px;
 	}
 
-	.posts {
-		padding-top: 36px;
+	.empty-search {
+		margin: 12px 0 0;
+		color: var(--muted);
+		font-size: 13px;
+		line-height: 1.6;
 	}
 
-	.section-header {
+	.home-title {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 16px;
-		margin-bottom: 16px;
+		gap: 12px;
+		padding-bottom: 20px;
+		border-bottom: 1px solid var(--line);
+		font-size: 23px;
+		font-weight: 800;
+		line-height: 1.25;
+		margin: 0 0 20px;
 	}
 
-	h2 {
-		margin: 0;
-		font-size: 22px;
+	.home-title-text {
+		display: flex;
+		align-items: baseline;
+		gap: 8px;
 	}
 
-	.section-header a {
-		color: #315f4d;
+	.home-title[hidden] {
+		display: none;
+	}
+
+	.home-title strong {
+		color: var(--accent);
+		font-size: 23px;
+	}
+
+	.home-title[data-view-mode='timeline'] .page-size-control {
+		display: none;
+	}
+
+	.page-size-control {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		padding: 3px;
+		border: 1px solid rgba(255, 255, 255, 0.7);
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.58);
+	}
+
+	.page-size-control button {
+		width: 28px;
+		height: 24px;
+		border: 0;
+		border-radius: 999px;
+		background: transparent;
+		color: var(--muted);
+		font-size: 11px;
 		font-weight: 700;
-		text-decoration: none;
+		cursor: pointer;
+		transition:
+			background 160ms ease,
+			color 160ms ease;
 	}
 
-	ul {
+	.page-size-control button:hover,
+	.page-size-control button:focus-visible,
+	.page-size-control button[aria-pressed='true'] {
+		background: #fff;
+		color: var(--accent);
+		outline: 0;
+	}
+
+	.home-post-list {
 		display: grid;
-		gap: 10px;
-		padding: 0;
+		gap: 22px;
 		margin: 0;
+		padding: 0;
 		list-style: none;
 	}
 
-	li a {
+	.home-post-list [hidden] {
+		display: none;
+	}
+
+	.home-post-list a {
+		display: block;
+		padding: 22px 20px;
+		border: 1px solid rgba(255, 255, 255, 0.82);
+		border-radius: 20px;
+		background: var(--panel-strong);
+		color: var(--text);
+		text-decoration: none;
+		box-shadow: none;
+		transition:
+			border-color 160ms ease,
+			box-shadow 160ms ease,
+			transform 160ms ease;
+	}
+
+	.home-post-list a:hover,
+	.home-post-list a:focus-visible {
+		border-color: color-mix(in srgb, var(--accent) 24%, white);
+		box-shadow: 0 12px 30px rgba(45, 84, 255, 0.08);
+		transform: translateY(-1px);
+		outline: 0;
+	}
+
+	.home-post-list[data-view='timeline'] {
+		position: relative;
+		gap: 4px;
+		padding-left: 104px;
+	}
+
+	.home-post-list[data-view='timeline'] li {
+		position: relative;
+		min-height: 48px;
+		padding: 0 0 12px;
+	}
+
+	.home-post-list[data-view='timeline'] li:has([data-timeline-year]:not(:empty)) {
+		padding-top: 38px;
+	}
+
+	.home-post-list[data-view='timeline'] li::before {
+		content: '';
+		position: absolute;
+		top: 14px;
+		left: -28px;
+		z-index: 1;
+		width: 6px;
+		height: 6px;
+		border: 3px solid color-mix(in srgb, var(--accent) 18%, white);
+		border-radius: 50%;
+		background: var(--accent);
+	}
+
+	.home-post-list[data-view='timeline'] li:has([data-timeline-year]:not(:empty))::before {
+		top: 52px;
+	}
+
+	.home-post-list[data-view='timeline'] li::after {
+		content: '';
+		position: absolute;
+		top: 27px;
+		bottom: -2px;
+		left: -23px;
+		width: 1px;
+		background: var(--line);
+	}
+
+	.home-post-list[data-view='timeline'] li:has([data-timeline-year]:not(:empty))::after {
+		top: 65px;
+	}
+
+	.home-post-list[data-view='timeline'] li:last-child {
+		padding-bottom: 0;
+	}
+
+	.home-post-list[data-view='timeline'] li:last-child::after {
+		display: none;
+	}
+
+	.home-post-list[data-view='timeline'] li[data-last-visible='true']::after {
+		display: none;
+	}
+
+	.home-post-list[data-view='timeline'] a {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 16px;
-		padding: 18px 0;
-		border-bottom: 1px solid #e3e6e1;
+		gap: 14px;
+		min-height: 42px;
+		padding: 11px 18px;
+		border-radius: 999px;
+		background: #fff;
+		box-shadow: none;
+		overflow: visible;
+	}
+
+	.home-post-list[data-view='timeline'] a:hover {
+		box-shadow: 0 12px 28px rgba(20, 24, 40, 0.08);
+	}
+
+	.home-post-list[data-view='timeline'] a:focus-visible {
+		box-shadow: 0 12px 28px rgba(45, 84, 255, 0.12);
+		outline: 0;
+	}
+
+	.timeline-date {
+		display: none;
+	}
+
+	.home-post-list[data-view='timeline'] .timeline-date {
+		position: absolute;
+		top: 0;
+		left: -104px;
+		display: block;
+		width: 68px;
+		min-height: 34px;
+		color: var(--muted);
+		font-size: 12px;
+		line-height: 1;
+		text-align: right;
+	}
+
+	.home-post-list[data-view='timeline'] .timeline-date strong {
+		position: absolute;
+		top: 5px;
+		left: 0;
+		width: 68px;
+		color: var(--text);
+		font-size: 21px;
+		font-weight: 800;
+		text-align: right;
+	}
+
+	.home-post-list[data-view='timeline'] .timeline-date span {
+		display: block;
+		padding-top: 12px;
+		color: var(--muted);
+		font-size: 12px;
+	}
+
+	.home-post-list[data-view='timeline'] li:has([data-timeline-year]:not(:empty)) .timeline-date span {
+		padding-top: 50px;
+	}
+
+	.home-post-title {
+		margin: 0 0 10px;
+		font-size: 16px;
+		font-weight: 700;
 		text-decoration: none;
 	}
 
-	li span {
-		font-size: 18px;
+	.home-post-title::after {
+		content: '';
+		display: block;
+		width: 30px;
+		height: 2px;
+		margin-top: 7px;
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--accent) 72%, white);
+	}
+
+	.home-post-list[data-view='timeline'] .home-post-title {
+		flex: 0 1 auto;
+		min-width: 0;
+		margin: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-size: 14px;
+		text-decoration: none;
+	}
+
+	.home-post-list[data-view='timeline'] .home-post-title::after {
+		display: none;
+	}
+
+	.home-post-list p {
+		display: -webkit-box;
+		margin: 0 0 10px;
+		color: var(--muted);
+		font-size: 12px;
+		line-height: 1.62;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	.home-post-list[data-view='timeline'] p {
+		display: none;
+	}
+
+	.home-post-meta {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+		color: var(--muted);
+		font-size: 11px;
+	}
+
+	.home-post-meta i {
+		width: 1px;
+		height: 12px;
+		background: var(--line);
+	}
+
+	.home-post-meta time {
+		color: var(--muted);
+		font-size: 12px;
+	}
+
+	.home-post-list[data-view='timeline'] .home-post-meta {
+		flex: 1 0 auto;
+		justify-content: flex-end;
+		gap: 5px;
+		flex-wrap: nowrap;
+		font-size: 12px;
+	}
+
+	.home-post-list[data-view='timeline'] .home-post-meta time,
+	.home-post-list[data-view='timeline'] .home-post-meta i,
+	.home-post-list[data-view='timeline'] .home-post-meta > span {
+		display: none;
+	}
+
+	.home-post-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 5px;
+	}
+
+	.home-post-tags em {
+		padding: 3px 7px;
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--accent) 10%, transparent);
+		color: var(--accent);
+		font-size: 11px;
+		font-style: normal;
 		font-weight: 700;
 	}
 
-	time {
-		flex: 0 0 auto;
-		color: #66736b;
-		font-size: 14px;
+	.home-post-list[data-view='timeline'] .home-post-tags {
+		gap: 6px;
 	}
 
-	.empty {
+	.home-post-list[data-view='timeline'] .home-post-tags em {
+		padding: 0;
+		background: transparent;
+		color: var(--muted);
+		font-size: 12px;
+		font-weight: 400;
+	}
+
+	.home-post-list[data-view='timeline'] .home-post-tags em::before {
+		content: '#';
+	}
+
+	.empty-filter {
 		margin: 0;
-		padding: 24px 0;
-		color: #66736b;
+		color: var(--muted);
+		font-size: 13px;
 		line-height: 1.7;
 	}
 
-	@media (max-width: 640px) {
-		.home {
-			padding: 48px 0;
+	.pagination {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 10px;
+		margin-top: 18px;
+	}
+
+	.pagination[hidden] {
+		display: none;
+	}
+
+	.pagination button {
+		min-width: 58px;
+		height: 30px;
+		border: 1px solid rgba(255, 255, 255, 0.82);
+		border-radius: 999px;
+		background: #fff;
+		color: var(--text);
+		font-size: 12px;
+		cursor: pointer;
+		transition:
+			border-color 160ms ease,
+			color 160ms ease,
+			box-shadow 160ms ease;
+	}
+
+	.pagination button:hover:not(:disabled),
+	.pagination button:focus-visible:not(:disabled) {
+		border-color: color-mix(in srgb, var(--accent) 28%, white);
+		color: var(--accent);
+		box-shadow: 0 10px 22px rgba(45, 84, 255, 0.08);
+		outline: 0;
+	}
+
+	.pagination button:disabled {
+		color: color-mix(in srgb, var(--muted) 54%, white);
+		cursor: default;
+	}
+
+	.pagination span {
+		min-width: 44px;
+		color: var(--muted);
+		font-size: 12px;
+		text-align: center;
+	}
+
+	@media (max-width: 900px) {
+		.home-post-frame {
+			padding: 24px 18px;
 		}
 
-		h1 {
-			font-size: 34px;
-		}
-
-		li a {
+		.home-title {
+			font-size: 24px;
 			align-items: flex-start;
 			flex-direction: column;
-			gap: 6px;
+		}
+
+		.home-post-list[data-view='timeline'] {
+			padding-left: 82px;
+		}
+
+		.home-post-list[data-view='timeline'] .timeline-date {
+			left: -82px;
+			width: 50px;
+		}
+
+		.home-post-list[data-view='timeline'] .timeline-date strong {
+			font-size: 17px;
 		}
 	}
 </style>
