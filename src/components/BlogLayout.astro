@@ -64,7 +64,9 @@ function isActiveTag(tag: string) {
 	<aside class="sidebar">
 		<section class="sidebar-frame profile-frame">
 			<div class="profile-card">
-				<div class="avatar">g</div>
+				<div class="avatar">
+					<img src="\image.webp" alt="gjsk132 profile" />
+				</div>
 				<div>
 					<strong>gjsk132</strong>
 					<p>나만의 지식 저장소</p>
@@ -350,15 +352,19 @@ function isActiveTag(tag: string) {
 	}
 
 	.avatar {
-		width: 42px;
-		height: 42px;
+		width: 56px;
+		height: 56px;
 		border-radius: 50%;
-		display: grid;
-		place-items: center;
-		background: var(--panel-strong);
-		border: 1px solid var(--line);
-		color: var(--muted);
-		font-weight: 700;
+		overflow: hidden;
+		border: 2px solid rgba(255, 255, 255, 0.8);
+		flex-shrink: 0;
+	}
+
+	.avatar img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
 	}
 
 	.profile-card strong {
