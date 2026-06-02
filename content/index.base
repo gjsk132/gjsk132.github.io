@@ -1,0 +1,16 @@
+summaries:
+  Filled: values.filter(!value.isType("null")).length
+properties:
+  note.summary:
+    displayName: define
+views:
+  - type: table
+    name: index
+    filters:
+      and:
+        - file.inFolder("index")
+    order:
+      - file.name
+      - define
+    columnSize:
+      file.name: 185
