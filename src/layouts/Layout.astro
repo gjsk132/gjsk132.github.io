@@ -50,15 +50,50 @@ const {
 
 	* {
 		box-sizing: border-box;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	html {
+		scrollbar-gutter: auto;
+		scrollbar-width: none;
 	}
 
 	body {
 		margin: 0;
 		min-height: 100vh;
 		background: var(--bg);
+		scrollbar-width: none;
+		-ms-overflow-style: none;
 	}
 
 	a {
 		color: inherit;
+	}
+
+	::-webkit-scrollbar {
+		display: none;
+		width: 0;
+		height: 0;
+	}
+
+	::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	::-webkit-scrollbar-thumb {
+		border: 3px solid transparent;
+		border-radius: 999px;
+		background: rgba(67, 97, 255, 0.32);
+		background-clip: padding-box;
+	}
+
+	::-webkit-scrollbar-thumb:hover {
+		background: rgba(67, 97, 255, 0.48);
+		background-clip: padding-box;
+	}
+
+	::-webkit-scrollbar-corner {
+		background: transparent;
 	}
 </style>

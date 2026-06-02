@@ -6,6 +6,7 @@ import {
 	getAllPosts,
 	getPostCategories,
 	getPostCategoryCounts,
+	getPostDate,
 	getPostTags,
 } from '../../lib/posts';
 
@@ -28,6 +29,19 @@ const tags = getPostTags(posts);
 const postCategory = post.frontmatter.category ?? post.frontmatter.categories?.[0] ?? 'none';
 const postTags = post.frontmatter.tags ?? [];
 const postDescription = post.frontmatter.description ?? post.frontmatter.summary;
+const postDate = getPostDate(post);
+const currentPostIndex = posts.findIndex((item) => item.slug === post.slug);
+const nextPost = currentPostIndex > 0 ? posts[currentPostIndex - 1] : undefined;
+const previousPost =
+	currentPostIndex >= 0 && currentPostIndex < posts.length - 1 ? posts[currentPostIndex + 1] : undefined;
+
+function navPostCategory(navPost: (typeof posts)[number]) {
+	return navPost.frontmatter.category ?? navPost.frontmatter.categories?.[0] ?? 'none';
+}
+
+function navPostTags(navPost: (typeof posts)[number]) {
+	return navPost.frontmatter.tags ?? [];
+}
 ---
 
 <Layout title={`${title} | gjsk132 blog`} description={post.frontmatter.description ?? title}>
@@ -40,17 +54,11 @@ const postDescription = post.frontmatter.description ?? post.frontmatter.summary
 		activeTags={postTags}
 	>
 		<article class="post-card">
+			{postDate && <time class="post-date" datetime={new Date(postDate).toISOString()}>{formatPostDate(postDate)}</time>}
 			<h1>{title}</h1>
 			{postDescription && <p class="post-description">{postDescription}</p>}
 			<div class="meta">
 				<span>{postCategory}</span>
-				{
-					post.frontmatter.pubDate && (
-						<time datetime={new Date(post.frontmatter.pubDate).toISOString()}>
-							{formatPostDate(post.frontmatter.pubDate)}
-						</time>
-					)
-				}
 				{
 					postTags.length > 0 && (
 						<div class="post-tags">
@@ -66,15 +74,121 @@ const postDescription = post.frontmatter.description ?? post.frontmatter.summary
 				<Content />
 			</div>
 		</article>
+
+		{
+			(previousPost || nextPost) && (
+				<nav class="post-neighbors" aria-label="이전 다음 게시글">
+					{previousPost ? (
+						<a href={`/blog/${previousPost.slug}/`} rel="prev" data-astro-prefetch>
+							<span>이전 게시글</span>
+							<strong>{previousPost.frontmatter.title ?? previousPost.slug}</strong>
+							<div class="neighbor-meta">
+								<em>{navPostCategory(previousPost)}</em>
+								{navPostTags(previousPost).map((tag) => <em>{tag}</em>)}
+							</div>
+						</a>
+					) : null}
+					{nextPost ? (
+						<a href={`/blog/${nextPost.slug}/`} rel="next" data-astro-prefetch>
+							<span>다음 게시글</span>
+							<strong>{nextPost.frontmatter.title ?? nextPost.slug}</strong>
+							<div class="neighbor-meta">
+								<em>{navPostCategory(nextPost)}</em>
+								{navPostTags(nextPost).map((tag) => <em>{tag}</em>)}
+							</div>
+						</a>
+					) : null}
+				</nav>
+			)
+		}
 	</BlogLayout>
 </Layout>
 
 <script>
-	const mermaidBlocks = document.querySelectorAll<HTMLElement>(
-		'.article-content pre[data-language="mermaid"] > code, .article-content pre > code.language-mermaid',
-	);
+	function getCodeLanguage(pre: HTMLPreElement) {
+		const languageFromData = pre.dataset.language;
+		const code = pre.querySelector('code');
+		const languageFromClass = Array.from(code?.classList ?? [])
+			.find((className) => className.startsWith('language-'))
+			?.replace('language-', '');
 
-	if (mermaidBlocks.length > 0) {
+		return languageFromData ?? languageFromClass ?? 'code';
+	}
+
+	function isMermaidPre(pre: HTMLPreElement) {
+		return getCodeLanguage(pre).trim().toLowerCase() === 'mermaid';
+	}
+
+	function enhanceCodeBlocks() {
+		document.querySelectorAll<HTMLPreElement>('.article-content pre').forEach((pre) => {
+			if (isMermaidPre(pre) || pre.closest('.code-block')) return;
+
+			const wrapper = document.createElement('div');
+			const header = document.createElement('div');
+			const language = document.createElement('span');
+			const button = document.createElement('button');
+			const code = pre.querySelector('code');
+
+			wrapper.className = 'code-block';
+			header.className = 'code-block-header';
+			language.className = 'code-language';
+			language.textContent = getCodeLanguage(pre);
+			button.className = 'code-copy-button';
+			button.type = 'button';
+			button.innerHTML =
+				'<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 7.5A2.5 2.5 0 0 1 10.5 5h6A2.5 2.5 0 0 1 19 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-6A2.5 2.5 0 0 1 8 16.5v-9Zm2 0v9c0 .3.2.5.5.5h6c.3 0 .5-.2.5-.5v-9c0-.3-.2-.5-.5-.5h-6c-.3 0-.5.2-.5.5ZM5 14.5V6a3 3 0 0 1 3-3h6.5v2H8a1 1 0 0 0-1 1v8.5H5Z" /></svg>';
+			button.setAttribute('aria-label', '코드 복사');
+			button.title = '코드 복사';
+
+			button.addEventListener('click', async () => {
+				const codeText = code?.textContent ?? pre.textContent ?? '';
+
+				try {
+					await navigator.clipboard.writeText(codeText);
+					button.dataset.copied = 'true';
+					button.setAttribute('aria-label', '복사됨');
+					button.title = '복사됨';
+					window.setTimeout(() => {
+						delete button.dataset.copied;
+						button.setAttribute('aria-label', '코드 복사');
+						button.title = '코드 복사';
+					}, 1200);
+				} catch {
+					button.dataset.failed = 'true';
+					button.setAttribute('aria-label', '복사 실패');
+					button.title = '복사 실패';
+					window.setTimeout(() => {
+						delete button.dataset.failed;
+						button.setAttribute('aria-label', '코드 복사');
+						button.title = '코드 복사';
+					}, 1200);
+				}
+			});
+
+			header.append(language, button);
+			pre.before(wrapper);
+			wrapper.append(header, pre);
+		});
+	}
+
+	function scheduleMermaidRender(callback: () => void) {
+		if ('requestIdleCallback' in window) {
+			window.requestIdleCallback(callback, { timeout: 1200 });
+			return;
+		}
+
+		window.setTimeout(callback, 1);
+	}
+
+	enhanceCodeBlocks();
+
+	scheduleMermaidRender(async () => {
+		const mermaidBlocks = document.querySelectorAll<HTMLElement>(
+			'.article-content pre[data-language="mermaid"] > code, .article-content pre > code.language-mermaid',
+		);
+
+		if (mermaidBlocks.length === 0) return;
+
 		const { default: mermaid } = await import('mermaid');
 
 		mermaid.initialize({
@@ -96,7 +210,7 @@ const postDescription = post.frontmatter.description ?? post.frontmatter.summary
 		const renderedMermaidBlocks = document.querySelectorAll<HTMLElement>('.article-content .mermaid');
 
 		await mermaid.run({ nodes: renderedMermaidBlocks });
-	}
+	});
 </script>
 
 <style>
@@ -108,10 +222,19 @@ const postDescription = post.frontmatter.description ?? post.frontmatter.summary
 		border: 1px solid rgba(255, 255, 255, 0.9);
 	}
 
+	.post-date {
+		display: block;
+		margin: 0 0 8px;
+		color: var(--muted);
+		font-size: 13px;
+		line-height: 1.4;
+	}
+
 	h1 {
 		font-size: 34px;
 		line-height: 1.25;
 		margin: 0 0 10px;
+		overflow-wrap: anywhere;
 	}
 
 	.post-description {
@@ -126,27 +249,31 @@ const postDescription = post.frontmatter.description ?? post.frontmatter.summary
 		align-items: center;
 		flex-wrap: wrap;
 		gap: 8px;
+		min-width: 0;
 		color: var(--muted);
 		font-size: 13px;
 		margin-bottom: 34px;
 	}
 
-	.meta span,
-	.meta time {
+	.meta span {
+		max-width: 100%;
 		padding: 4px 8px;
 		border-radius: 999px;
 		background: color-mix(in srgb, var(--accent) 10%, transparent);
 		color: var(--accent);
 		font-weight: 700;
+		overflow-wrap: anywhere;
 	}
 
 	.post-tags {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 6px;
+		min-width: 0;
 	}
 
 	.post-tags em {
+		max-width: 100%;
 		padding: 4px 8px;
 		border-radius: 999px;
 		background: color-mix(in srgb, var(--accent) 10%, transparent);
@@ -154,6 +281,7 @@ const postDescription = post.frontmatter.description ?? post.frontmatter.summary
 		font-size: 11px;
 		font-style: normal;
 		font-weight: 700;
+		overflow-wrap: anywhere;
 	}
 
 	.content-divider {
@@ -206,18 +334,166 @@ const postDescription = post.frontmatter.description ?? post.frontmatter.summary
 
 	.article-content :global(pre) {
 		overflow-x: auto;
-		padding: 16px;
+		margin: 22px 0;
+		padding: 18px;
 		border-radius: 16px;
-		background: var(--panel-strong);
-		border: 1px solid var(--line);
+		background: #12161f !important;
+		border: 1px solid rgba(255, 255, 255, 0.08);
 		transition:
 			border-color 160ms ease,
 			box-shadow 160ms ease;
 	}
 
+	.article-content :global(.code-block) {
+		position: relative;
+		margin: 22px 0;
+		border-radius: 10px;
+		background: #1f212b;
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		box-shadow:
+			inset 0 1px 0 rgba(255, 255, 255, 0.04),
+			0 16px 34px rgba(15, 18, 28, 0.12);
+		overflow: hidden;
+		transition:
+			border-color 160ms ease,
+			box-shadow 160ms ease;
+	}
+
+	.article-content :global(.code-block:hover) {
+		border-color: rgba(67, 97, 255, 0.34);
+		box-shadow:
+			inset 0 1px 0 rgba(255, 255, 255, 0.05),
+			0 18px 38px rgba(15, 18, 28, 0.16);
+	}
+
+	.article-content :global(.code-block pre) {
+		margin: 0;
+		padding: 18px 18px 20px;
+		border: 0;
+		border-radius: 0;
+		background: transparent !important;
+		box-shadow: none;
+	}
+
+	.article-content :global(.code-block pre:hover) {
+		border-color: transparent;
+		box-shadow: none;
+	}
+
+	.article-content :global(.code-block-header) {
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		height: 34px;
+		padding: 0 10px 0 66px;
+		background: #090b12;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+		pointer-events: none;
+	}
+
+	.article-content :global(.code-block-header::before) {
+		content: '';
+		position: absolute;
+		left: 16px;
+		top: 50%;
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: #343744;
+		box-shadow:
+			12px 0 0 #343744,
+			24px 0 0 #343744;
+		transform: translateY(-50%);
+	}
+
+	.article-content :global(.code-language) {
+		color: #8294ff;
+		font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+		font-size: 10px;
+		font-weight: 800;
+		letter-spacing: 0;
+		text-transform: uppercase;
+	}
+
+	.article-content :global(.code-copy-button) {
+		pointer-events: auto;
+		width: 28px;
+		height: 28px;
+		display: grid;
+		place-items: center;
+		padding: 0;
+		border: 1px solid rgba(255, 255, 255, 0.09);
+		border-radius: 8px;
+		background: #272a36;
+		color: rgba(238, 243, 255, 0.82);
+		cursor: pointer;
+		transition:
+			background 160ms ease,
+			border-color 160ms ease,
+			color 160ms ease,
+			transform 160ms ease;
+	}
+
+	.article-content :global(.code-copy-button svg) {
+		width: 16px;
+		height: 16px;
+		fill: currentColor;
+	}
+
+	.article-content :global(.code-copy-button:hover),
+	.article-content :global(.code-copy-button:focus-visible) {
+		border-color: rgba(67, 97, 255, 0.55);
+		background: rgba(67, 97, 255, 0.2);
+		color: #fff;
+		transform: translateY(-1px);
+		outline: 0;
+	}
+
+	.article-content :global(.code-copy-button[data-copied='true']) {
+		border-color: rgba(83, 214, 135, 0.42);
+		background: rgba(83, 214, 135, 0.18);
+		color: #8ff0b2;
+	}
+
+	.article-content :global(.code-copy-button[data-failed='true']) {
+		border-color: rgba(255, 116, 116, 0.42);
+		background: rgba(255, 116, 116, 0.14);
+		color: #ff9f9f;
+	}
+
 	.article-content :global(pre:hover) {
-		border-color: color-mix(in srgb, var(--accent) 18%, var(--line));
+		border-color: rgba(67, 97, 255, 0.34);
 		box-shadow: 0 12px 28px rgba(20, 24, 40, 0.06);
+	}
+
+	.article-content :global(pre[data-language='mermaid']),
+	.article-content :global(pre:has(> code.language-mermaid)) {
+		position: relative;
+		min-height: 120px;
+		overflow: hidden;
+		margin: 24px 0;
+		background: var(--panel-strong) !important;
+		border: 1px solid var(--line);
+		color: transparent;
+		user-select: none;
+	}
+
+	.article-content :global(pre[data-language='mermaid'] code),
+	.article-content :global(pre:has(> code.language-mermaid) code) {
+		opacity: 0;
+	}
+
+	.article-content :global(pre[data-language='mermaid']::before),
+	.article-content :global(pre:has(> code.language-mermaid)::before) {
+		content: '';
+		position: absolute;
+		inset: 16px;
+		border-radius: 12px;
+		background:
+			linear-gradient(90deg, transparent, rgba(67, 97, 255, 0.08), transparent),
+			color-mix(in srgb, var(--accent) 4%, white);
 	}
 
 	.article-content :global(code) {
@@ -248,6 +524,95 @@ const postDescription = post.frontmatter.description ?? post.frontmatter.summary
 		height: auto;
 	}
 
+	.post-neighbors {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 12px;
+		margin-top: 16px;
+		padding: 16px;
+		border: 1px solid rgba(255, 255, 255, 0.58);
+		border-radius: 24px;
+		background: rgba(255, 255, 255, 0.18);
+		box-shadow: 0 20px 48px rgba(20, 24, 40, 0.08);
+	}
+
+	.post-neighbors a {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 9px;
+		min-width: 0;
+		min-height: 118px;
+		padding: 18px;
+		border: 1px solid rgba(255, 255, 255, 0.82);
+		border-radius: 18px;
+		background: var(--panel-strong);
+		color: var(--text);
+		text-decoration: none;
+		width: 100%;
+		transition:
+			border-color 160ms ease,
+			box-shadow 160ms ease,
+			transform 160ms ease;
+	}
+
+	.post-neighbors a:hover,
+	.post-neighbors a:focus-visible {
+		border-color: color-mix(in srgb, var(--accent) 24%, white);
+		box-shadow: 0 12px 30px rgba(45, 84, 255, 0.08);
+		transform: translateY(-1px);
+		outline: 0;
+	}
+
+	.post-neighbors a[rel='next'] {
+		align-items: flex-end;
+		text-align: right;
+	}
+
+	.post-neighbors span {
+		color: var(--muted);
+		font-size: 12px;
+		font-weight: 700;
+	}
+
+	.post-neighbors strong {
+		width: 100%;
+		min-width: 0;
+		color: var(--text);
+		font-size: 15px;
+		line-height: 1.4;
+		overflow-wrap: anywhere;
+	}
+
+	.neighbor-meta {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 6px;
+		width: 100%;
+		min-width: 0;
+	}
+
+	.post-neighbors em {
+		max-width: 100%;
+		padding: 4px 8px;
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--accent) 10%, transparent);
+		color: var(--accent);
+		font-size: 11px;
+		font-style: normal;
+		font-weight: 700;
+		overflow-wrap: anywhere;
+	}
+
+	.post-neighbors a[rel='next'] .neighbor-meta {
+		justify-content: flex-end;
+	}
+
+	.post-neighbors a[rel='next']:only-child {
+		grid-column: 2;
+	}
+
 	@media (max-width: 900px) {
 		.post-card {
 			padding: 24px 18px;
@@ -255,6 +620,28 @@ const postDescription = post.frontmatter.description ?? post.frontmatter.summary
 
 		h1 {
 			font-size: 25px;
+		}
+
+		.post-neighbors {
+			grid-template-columns: 1fr;
+			padding: 12px;
+		}
+
+		.post-neighbors a[rel='next'] {
+			align-items: flex-end;
+			text-align: right;
+		}
+
+		.post-neighbors:has(a:only-child) {
+			grid-template-columns: 1fr;
+		}
+
+		.post-neighbors a[rel='next']:only-child {
+			grid-column: auto;
+		}
+
+		.post-neighbors a[rel='next'] .neighbor-meta {
+			justify-content: flex-end;
 		}
 	}
 </style>

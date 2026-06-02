@@ -40,32 +40,94 @@ function isActiveTag(tag: string) {
 		</svg>
 	</a>
 
-	<div class="top-tools">
+	<div class="top-tools" data-top-tools>
 		<button class="search-button" type="button" aria-label="검색 열기" title="검색" data-search-open>
 			<svg aria-hidden="true" viewBox="0 0 24 24">
-				<path d="m20.7 19.3-4.2-4.2a7 7 0 1 0-1.4 1.4l4.2 4.2 1.4-1.4ZM5 11a6 6 0 1 1 12 0 6 6 0 0 1-12 0Z" />
+				<path d="M10.8 4.5a6.3 6.3 0 0 1 5 10.1l3.8 3.8a1 1 0 0 1-1.4 1.4l-3.8-3.8a6.3 6.3 0 1 1-3.6-11.5Zm0 2a4.3 4.3 0 1 0 0 8.6 4.3 4.3 0 0 0 0-8.6Z" />
 			</svg>
 		</button>
 		<div class="view-toggle" role="group" aria-label="보기 형태">
 			<button type="button" data-view-button="posts" aria-label="게시글 형태" title="게시글 형태" aria-pressed="true">
 				<svg aria-hidden="true" viewBox="0 0 24 24">
-					<path d="M5 5.5A2.5 2.5 0 0 1 7.5 3h9A2.5 2.5 0 0 1 19 5.5v13A2.5 2.5 0 0 1 16.5 21h-9A2.5 2.5 0 0 1 5 18.5v-13Zm2 0v13c0 .3.2.5.5.5h9c.3 0 .5-.2.5-.5v-13c0-.3-.2-.5-.5-.5h-9c-.3 0-.5.2-.5.5Zm2 2h6v2H9v-2Zm0 4h6v2H9v-2Zm0 4h4v2H9v-2Z" />
+					<path d="M6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5v-11A2.5 2.5 0 0 1 6.5 4Zm1.4 4.2v2h8.2v-2H7.9Zm0 4v2h8.2v-2H7.9Zm0 4v1.4h5.2v-1.4H7.9Z" />
 				</svg>
 			</button>
 			<button type="button" data-view-button="timeline" aria-label="타임라인 형태" title="타임라인 형태" aria-pressed="false">
 				<svg aria-hidden="true" viewBox="0 0 24 24">
-					<path d="M11 4h2v3.1a4 4 0 0 1 0 7.8V20h-2v-5.1a4 4 0 0 1 0-7.8V4Zm1 5a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm5-5h3v2h-3V4Zm0 5h5v2h-5V9Zm0 5h3v2h-3v-2Zm0 5h5v2h-5v-2ZM2 9h5v2H2V9Zm2-5h3v2H4V4Zm0 15h3v2H4v-2Z" />
+					<path d="M10.8 4h2.4v3.2a4.2 4.2 0 0 1 0 7.6V20h-2.4v-5.2a4.2 4.2 0 0 1 0-7.6V4Zm1.2 5.2a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4ZM17 5h4v2h-4V5Zm0 6h4v2h-4v-2Zm0 6h4v2h-4v-2ZM3 5h4v2H3V5Zm0 12h4v2H3v-2Z" />
 				</svg>
 			</button>
 		</div>
 		<slot name="top-tools" />
 	</div>
 
+	<nav class="mobile-topbar" aria-label="Mobile navigation" data-mobile-topbar>
+		<a class="mobile-icon-button" href="/" aria-label="홈으로 이동" title="Home">
+			<svg aria-hidden="true" viewBox="0 0 24 24">
+				<path d="M12 4.2 5.1 9.7c-.5.4-.8 1-.8 1.7v5.7c0 1 .8 1.8 1.8 1.8h3.2v-4.3c0-.8.6-1.4 1.4-1.4h2.6c.8 0 1.4.6 1.4 1.4v4.3h3.2c1 0 1.8-.8 1.8-1.8v-5.7c0-.7-.3-1.3-.8-1.7L12 4.2Z" />
+			</svg>
+		</a>
+
+		<details class="mobile-filter">
+			<summary>Category</summary>
+			<div class="mobile-filter-menu">
+				{
+					categories.map((category) => (
+						<a
+							href={categoryHref(category)}
+							data-category-link={category}
+							aria-current={isActiveCategory(category) ? 'page' : undefined}
+						>
+							<span>{category}</span>
+							<strong>{categoryCounts[category] ?? 0}</strong>
+						</a>
+					))
+				}
+			</div>
+		</details>
+
+		<details class="mobile-filter">
+			<summary>Tag</summary>
+			<div class="mobile-filter-menu mobile-tag-menu">
+				{
+					tags.length > 0 ? (
+						tags.map((tag) => (
+							<a href={tagHref(tag)} data-tag-link={tag} aria-current={isActiveTag(tag) ? 'page' : undefined}>
+								{tag}
+							</a>
+						))
+					) : (
+						<p class="empty-side">Obsidian frontmatter에 tags를 추가하면 표시됩니다.</p>
+					)
+				}
+			</div>
+		</details>
+
+		<button class="mobile-icon-button" type="button" aria-label="검색 열기" title="검색" data-search-open>
+			<svg aria-hidden="true" viewBox="0 0 24 24">
+				<path d="M10.8 4.5a6.3 6.3 0 0 1 5 10.1l3.8 3.8a1 1 0 0 1-1.4 1.4l-3.8-3.8a6.3 6.3 0 1 1-3.6-11.5Zm0 2a4.3 4.3 0 1 0 0 8.6 4.3 4.3 0 0 0 0-8.6Z" />
+			</svg>
+		</button>
+
+		<div class="mobile-view-toggle" role="group" aria-label="보기 형태">
+			<button type="button" data-view-button="posts" aria-label="게시글 형태" title="게시글 형태" aria-pressed="true">
+				<svg aria-hidden="true" viewBox="0 0 24 24">
+					<path d="M6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5v-11A2.5 2.5 0 0 1 6.5 4Zm1.4 4.2v2h8.2v-2H7.9Zm0 4v2h8.2v-2H7.9Zm0 4v1.4h5.2v-1.4H7.9Z" />
+				</svg>
+			</button>
+			<button type="button" data-view-button="timeline" aria-label="타임라인 형태" title="타임라인 형태" aria-pressed="false">
+				<svg aria-hidden="true" viewBox="0 0 24 24">
+					<path d="M10.8 4h2.4v3.2a4.2 4.2 0 0 1 0 7.6V20h-2.4v-5.2a4.2 4.2 0 0 1 0-7.6V4Zm1.2 5.2a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4ZM17 5h4v2h-4V5Zm0 6h4v2h-4v-2Zm0 6h4v2h-4v-2ZM3 5h4v2H3V5Zm0 12h4v2H3v-2Z" />
+				</svg>
+			</button>
+		</div>
+	</nav>
+
 	<aside class="sidebar">
 		<section class="sidebar-frame profile-frame">
 			<div class="profile-card">
 				<div class="avatar">
-					<img src="\image.webp" alt="gjsk132 profile" />
+					<img src="/image.webp" alt="gjsk132 profile" loading="eager" decoding="async" />
 				</div>
 				<div>
 					<strong>gjsk132</strong>
@@ -122,7 +184,27 @@ function isActiveTag(tag: string) {
 	const searchParams = new URLSearchParams(window.location.search);
 	const selectedCategory = searchParams.get('category');
 	const selectedTag = searchParams.get('tag');
-	const searchOpenButton = document.querySelector<HTMLButtonElement>('[data-search-open]');
+	const searchOpenButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-search-open]'));
+	const topTools = document.querySelector<HTMLElement>('[data-top-tools]');
+	const mobileTopbar = document.querySelector<HTMLElement>('[data-mobile-topbar]');
+	let lastScrollY = window.scrollY;
+	let ticking = false;
+
+	function setTopBarHidden(isHidden: boolean) {
+		homeButton?.setAttribute('data-top-hidden', String(isHidden));
+		topTools?.setAttribute('data-top-hidden', String(isHidden));
+		mobileTopbar?.setAttribute('data-top-hidden', String(isHidden));
+	}
+
+	function updateTopBarVisibility() {
+		const currentScrollY = window.scrollY;
+		const isScrollingDown = currentScrollY > lastScrollY;
+		const shouldHide = currentScrollY > 96 && isScrollingDown;
+
+		setTopBarHidden(shouldHide);
+		lastScrollY = Math.max(currentScrollY, 0);
+		ticking = false;
+	}
 
 	homeButton?.addEventListener('click', (event) => {
 		if (window.location.pathname === '/' && !window.location.search) {
@@ -148,28 +230,76 @@ function isActiveTag(tag: string) {
 		});
 	}
 
-	searchOpenButton?.addEventListener('click', () => {
-		const openEvent = new CustomEvent('site-search-open', { cancelable: true });
-		const wasHandled = !window.dispatchEvent(openEvent);
-		if (!wasHandled && window.location.pathname !== '/') {
-			window.location.href = '/?search=1';
-		}
+	searchOpenButtons.forEach((button) => {
+		button.addEventListener('click', () => {
+			const openEvent = new CustomEvent('site-search-open', { cancelable: true });
+			const wasHandled = !window.dispatchEvent(openEvent);
+			if (!wasHandled && window.location.pathname !== '/') {
+				window.location.href = '/?search=1';
+			}
+		});
 	});
 
 	const savedViewMode = window.localStorage.getItem('postViewMode') ?? 'posts';
+	const viewModeButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-view-button]'));
 
-	document.querySelectorAll<HTMLButtonElement>('[data-view-button]').forEach((button) => {
+	viewModeButtons.forEach((button) => {
 		button.setAttribute('aria-pressed', String(button.dataset.viewButton === savedViewMode));
 	});
 
-	document.querySelectorAll<HTMLButtonElement>('[data-view-button]').forEach((button) => {
+	viewModeButtons.forEach((button) => {
 		button.addEventListener('click', () => {
-			if (window.location.pathname === '/') return;
+			const nextViewMode = button.dataset.viewButton === 'timeline' ? 'timeline' : 'posts';
+			window.localStorage.setItem('postViewMode', nextViewMode);
 
-			window.localStorage.setItem('postViewMode', button.dataset.viewButton ?? 'posts');
-			window.location.href = '/';
+			for (const viewButton of viewModeButtons) {
+				viewButton.setAttribute('aria-pressed', String(viewButton.dataset.viewButton === nextViewMode));
+			}
+
+			window.dispatchEvent(
+				new CustomEvent('post-view-mode-change', {
+					detail: nextViewMode,
+				}),
+			);
 		});
 	});
+
+	window.addEventListener(
+		'scroll',
+		() => {
+			if (ticking) return;
+			ticking = true;
+			window.requestAnimationFrame(updateTopBarVisibility);
+		},
+		{ passive: true },
+	);
+
+	const prefetchedUrls = new Set<string>();
+
+	function prefetchInternalLink(link: HTMLAnchorElement) {
+		const url = new URL(link.href, window.location.href);
+		if (url.origin !== window.location.origin || url.href === window.location.href) return;
+		if (prefetchedUrls.has(url.href)) return;
+
+		prefetchedUrls.add(url.href);
+		const prefetchLink = document.createElement('link');
+		prefetchLink.rel = 'prefetch';
+		prefetchLink.href = url.href;
+		prefetchLink.as = 'document';
+		document.head.append(prefetchLink);
+	}
+
+	function prefetchClosestInternalLink(target: EventTarget | null) {
+		if (!(target instanceof Element)) return;
+
+		const link = target.closest<HTMLAnchorElement>('a[href^="/"]');
+		if (link) prefetchInternalLink(link);
+	}
+
+	document.addEventListener('pointerover', (event) => prefetchClosestInternalLink(event.target), {
+		passive: true,
+	});
+	document.addEventListener('focusin', (event) => prefetchClosestInternalLink(event.target));
 </script>
 
 <style>
@@ -182,7 +312,7 @@ function isActiveTag(tag: string) {
 		grid-template-areas: 'sidebar content';
 		align-items: start;
 		gap: 24px;
-		padding: 66px 0 0;
+		padding: 66px 0 96px;
 		background: transparent;
 	}
 
@@ -209,6 +339,16 @@ function isActiveTag(tag: string) {
 			transform 160ms ease;
 	}
 
+	.blog-home-button[data-top-hidden='true'] {
+		transform: translateY(-72px);
+		pointer-events: none;
+	}
+
+	.blog-home-button[data-top-hidden='true']:hover,
+	.blog-home-button[data-top-hidden='true']:focus-visible {
+		transform: translateY(-72px);
+	}
+
 	.blog-home-button:hover,
 	.blog-home-button:focus-visible {
 		border-color: color-mix(in srgb, var(--accent) 32%, white);
@@ -232,6 +372,15 @@ function isActiveTag(tag: string) {
 		display: flex;
 		align-items: center;
 		gap: 10px;
+		transition:
+			opacity 180ms ease,
+			transform 180ms ease;
+	}
+
+	.top-tools[data-top-hidden='true'] {
+		opacity: 0;
+		transform: translateY(-72px);
+		pointer-events: none;
 	}
 
 	.search-button {
@@ -316,30 +465,54 @@ function isActiveTag(tag: string) {
 
 	.sidebar {
 		grid-area: sidebar;
-		position: sticky;
-		top: 66px;
 		display: flex;
 		flex-direction: column;
-		gap: 14px;
+		gap: 12px;
+		max-height: calc(100vh - 96px);
 		overflow-y: auto;
-		padding: 0;
-		background: transparent;
+		padding: 14px;
+		border: 1px solid rgba(255, 255, 255, 0.62);
+		border-radius: 24px;
+		background: rgba(255, 255, 255, 0.18);
+		box-shadow: 0 18px 34px rgba(20, 24, 40, 0.08);
+		scrollbar-width: none;
+	}
+
+	.sidebar::-webkit-scrollbar {
+		width: 6px;
+	}
+
+	.sidebar::-webkit-scrollbar-thumb {
+		border: 2px solid transparent;
+		border-radius: 999px;
+		background: rgba(67, 97, 255, 0.3);
+		background-clip: padding-box;
+	}
+
+	.sidebar::-webkit-scrollbar-thumb:hover {
+		background: rgba(67, 97, 255, 0.46);
+		background-clip: padding-box;
 	}
 
 	.sidebar-frame {
-		padding: 14px;
-		border: 2px solid rgba(255, 255, 255, 0.58);
-		border-radius: 20px;
-		background: rgba(255, 255, 255, 0.18);
-		box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+		padding: 0;
+		border: 0;
+		border-radius: 0;
+		background: transparent;
+		box-shadow: none;
+	}
+
+	.sidebar-frame + .sidebar-frame {
+		padding-top: 14px;
+		border-top: 1px solid rgba(255, 255, 255, 0.62);
 	}
 
 	.profile-card,
 	.github-card {
 		background: #fff;
 		border: 1px solid rgba(255, 255, 255, 0.9);
-		border-radius: 20px;
-		box-shadow: 0 14px 32px rgba(20, 24, 40, 0.07);
+		border-radius: 18px;
+		box-shadow: none;
 	}
 
 	.profile-card {
@@ -347,8 +520,8 @@ function isActiveTag(tag: string) {
 		align-items: center;
 		gap: 12px;
 		min-height: 76px;
-		padding: 14px 16px;
-		margin-bottom: 14px;
+		padding: 13px 14px;
+		margin-bottom: 10px;
 	}
 
 	.avatar {
@@ -380,8 +553,9 @@ function isActiveTag(tag: string) {
 
 	.github-card {
 		display: block;
-		min-height: 38px;
-		padding: 11px 8px;
+		min-height: 36px;
+		padding: 10px 8px;
+		border-radius: 999px;
 		text-align: center;
 		text-decoration: none;
 		font-size: 13px;
@@ -401,7 +575,7 @@ function isActiveTag(tag: string) {
 
 	.category-list {
 		display: grid;
-		gap: 10px;
+		gap: 8px;
 	}
 
 	.category-list a {
@@ -410,7 +584,7 @@ function isActiveTag(tag: string) {
 		justify-content: space-between;
 		gap: 12px;
 		width: 100%;
-		padding: 10px 13px;
+		padding: 9px 12px;
 		border-radius: 999px;
 		background: #fff;
 		color: var(--text);
@@ -458,15 +632,15 @@ function isActiveTag(tag: string) {
 	}
 
 	.plain-card h3 {
-		margin: 0 0 10px;
-		font-size: 14px;
+		margin: 0 0 9px;
+		font-size: 13px;
 		font-weight: 700;
 	}
 
 	.tags {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 8px;
+		gap: 7px;
 	}
 
 	.tags span,
@@ -494,30 +668,252 @@ function isActiveTag(tag: string) {
 		min-width: 0;
 	}
 
+	.mobile-topbar {
+		display: none;
+	}
+
 	@media (max-width: 900px) {
 		.blog-layout {
 			width: auto;
 			grid-template-columns: 1fr;
-			grid-template-areas:
-				'sidebar'
-				'content';
-			padding: 70px 14px 32px;
+			grid-template-areas: 'content';
+			padding: 76px 12px 96px;
 		}
 
 		.blog-home-button {
-			left: 18px;
-			top: 18px;
+			display: none;
 		}
 
 		.top-tools {
-			left: 72px;
-			right: 16px;
-			top: 20px;
+			display: none;
 		}
 
 		.sidebar {
-			position: static;
-			height: auto;
+			display: none;
+		}
+
+		.content {
+			width: 100%;
+		}
+
+		.mobile-topbar {
+			position: fixed;
+			top: 10px;
+			left: 10px;
+			right: 10px;
+			z-index: 20;
+			display: grid;
+			grid-template-columns: 34px minmax(74px, 1fr) minmax(58px, 0.8fr) 34px auto;
+			align-items: center;
+			gap: 6px;
+			min-height: 48px;
+			padding: 7px;
+			border: 1px solid rgba(255, 255, 255, 0.68);
+			border-radius: 18px;
+			background: rgba(255, 255, 255, 0.72);
+			box-shadow: 0 14px 34px rgba(20, 24, 40, 0.1);
+			backdrop-filter: blur(18px);
+			transition:
+				opacity 180ms ease,
+				transform 180ms ease;
+		}
+
+		.mobile-topbar[data-top-hidden='true'] {
+			opacity: 0;
+			transform: translateY(-72px);
+			pointer-events: none;
+		}
+
+		.mobile-icon-button,
+		.mobile-filter summary,
+		.mobile-view-toggle {
+			min-width: 0;
+			height: 34px;
+			border: 0;
+			border-radius: 999px;
+			background: #fff;
+			color: var(--text);
+			box-shadow: var(--shadow);
+		}
+
+		.mobile-icon-button {
+			display: grid;
+			place-items: center;
+			padding: 0;
+			text-decoration: none;
+			cursor: pointer;
+		}
+
+		.mobile-icon-button svg {
+			width: 17px;
+			height: 17px;
+			fill: currentColor;
+		}
+
+		.mobile-filter {
+			position: relative;
+			min-width: 0;
+		}
+
+		.mobile-filter summary {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 5px;
+			padding: 0 10px;
+			overflow: hidden;
+			font-size: 12px;
+			font-weight: 700;
+			line-height: 1;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			list-style: none;
+			cursor: pointer;
+			transition:
+				background 160ms ease,
+				color 160ms ease,
+				box-shadow 160ms ease;
+		}
+
+		.mobile-filter summary::-webkit-details-marker {
+			display: none;
+		}
+
+		.mobile-filter summary::after {
+			content: '';
+			width: 6px;
+			height: 6px;
+			border-right: 1.5px solid currentColor;
+			border-bottom: 1.5px solid currentColor;
+			color: var(--muted);
+			transform: translateY(-2px) rotate(45deg);
+			transition:
+				color 160ms ease,
+				transform 160ms ease;
+		}
+
+		.mobile-filter[open] summary {
+			background: color-mix(in srgb, var(--accent) 10%, white);
+			color: var(--accent);
+		}
+
+		.mobile-filter[open] summary::after {
+			color: var(--accent);
+			transform: translateY(2px) rotate(225deg);
+		}
+
+		.mobile-filter-menu {
+			position: absolute;
+			top: calc(100% + 10px);
+			left: 0;
+			z-index: 24;
+			display: grid;
+			gap: 7px;
+			width: min(240px, calc(100vw - 20px));
+			max-height: 280px;
+			overflow-y: auto;
+			padding: 9px;
+			border: 1px solid rgba(255, 255, 255, 0.78);
+			border-radius: 18px;
+			background: rgba(255, 255, 255, 0.96);
+			box-shadow: 0 18px 38px rgba(20, 24, 40, 0.14);
+			backdrop-filter: blur(18px);
+		}
+
+		.mobile-filter:nth-of-type(2) .mobile-filter-menu {
+			left: auto;
+			right: 0;
+		}
+
+		.mobile-filter-menu a {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 10px;
+			min-width: 0;
+			padding: 9px 11px;
+			border-radius: 999px;
+			background: #fff;
+			color: var(--text);
+			font-size: 12px;
+			text-decoration: none;
+			overflow-wrap: anywhere;
+		}
+
+		.mobile-filter-menu a span {
+			min-width: 0;
+			overflow-wrap: anywhere;
+		}
+
+		.mobile-filter-menu strong {
+			color: var(--accent);
+			font-size: 12px;
+		}
+
+		.mobile-tag-menu {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: flex-start;
+		}
+
+		.mobile-tag-menu a {
+			display: inline-flex;
+			justify-content: center;
+		}
+
+		.mobile-view-toggle {
+			position: relative;
+			display: flex;
+			align-items: center;
+			gap: 4px;
+			padding: 3px;
+			border: 1px solid rgba(255, 255, 255, 0.82);
+			background:
+				linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.72)),
+				#fff;
+			box-shadow:
+				inset 0 1px 0 rgba(255, 255, 255, 0.72),
+				0 10px 22px rgba(20, 24, 40, 0.07);
+		}
+
+		.mobile-view-toggle button {
+			width: 28px;
+			height: 28px;
+			display: grid;
+			place-items: center;
+			border: 0;
+			border-radius: 50%;
+			background: transparent;
+			color: var(--muted);
+			cursor: pointer;
+			transition:
+				background 160ms ease,
+				color 160ms ease,
+				box-shadow 160ms ease,
+				transform 160ms ease;
+		}
+
+		.mobile-view-toggle button:hover,
+		.mobile-view-toggle button:focus-visible {
+			background: color-mix(in srgb, var(--accent) 7%, transparent);
+			color: var(--accent);
+			outline: 0;
+		}
+
+		.mobile-view-toggle button[aria-pressed='true'] {
+			background:
+				linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.2)),
+				color-mix(in srgb, var(--accent) 13%, white);
+			color: var(--accent);
+			box-shadow:
+				inset 0 1px 0 rgba(255, 255, 255, 0.72),
+				0 7px 14px rgba(67, 97, 255, 0.14);
+		}
+
+		.mobile-view-toggle svg {
+			width: 17px;
+			height: 17px;
+			fill: currentColor;
 		}
 	}
 </style>

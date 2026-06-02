@@ -8,7 +8,7 @@ export default defineConfig({
 	site: 'https://gjsk132.github.io',
 	markdown: {
 		shikiConfig: {
-			theme: 'github-light',
+			theme: 'one-dark-pro',
 		},
 		processor: unified({
 			remarkPlugins: [remarkObsidianImages],

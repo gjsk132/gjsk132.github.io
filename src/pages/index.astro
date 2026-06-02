@@ -14,6 +14,15 @@ const posts = await getAllPosts();
 const categories = getPostCategories(posts);
 const categoryCounts = getPostCategoryCounts(posts);
 const tags = getPostTags(posts);
+const initialCategory = Astro.url.searchParams.get('category');
+const initialTag = Astro.url.searchParams.get('tag');
+const initialFilteredPosts = posts.filter((post) => {
+	if (initialCategory) return postCategory(post) === initialCategory;
+	if (initialTag) return postTags(post).includes(initialTag);
+	return true;
+});
+const initialListTitle = initialCategory ?? (initialTag ? `#${initialTag}` : 'HOME');
+const initialPostCount = initialFilteredPosts.length;
 
 function postCategory(post: (typeof posts)[number]) {
 	return post.frontmatter.category ?? post.frontmatter.categories?.[0] ?? 'none';
@@ -58,13 +67,19 @@ function searchPreview(post: (typeof posts)[number]) {
 ---
 
 <Layout title="gjsk132 blog" description="gjsk132's blog">
+	<script is:inline>
+		const routeFilterParams = new URLSearchParams(window.location.search);
+		if (routeFilterParams.has('category') || routeFilterParams.has('tag')) {
+			document.documentElement.dataset.routeFilterPending = 'true';
+		}
+	</script>
 	<BlogLayout categories={categories} categoryCounts={categoryCounts} tags={tags} postCount={posts.length}>
 		<section class="home-post-frame">
 			<section class="search-panel" data-search-panel hidden>
 				<h1 class="search-title">Search</h1>
 				<label class="search-field">
 					<svg aria-hidden="true" viewBox="0 0 24 24">
-						<path d="m20.7 19.3-4.2-4.2a7 7 0 1 0-1.4 1.4l4.2 4.2 1.4-1.4ZM5 11a6 6 0 1 1 12 0 6 6 0 0 1-12 0Z" />
+						<path d="M10.8 4.5a6.3 6.3 0 0 1 5 10.1l3.8 3.8a1 1 0 0 1-1.4 1.4l-3.8-3.8a6.3 6.3 0 1 1-3.6-11.5Zm0 2a4.3 4.3 0 1 0 0 8.6 4.3 4.3 0 0 0 0-8.6Z" />
 					</svg>
 					<input type="search" placeholder="검색어를 입력하세요" data-search-input />
 				</label>
@@ -95,8 +110,8 @@ function searchPreview(post: (typeof posts)[number]) {
 
 			<h1 class="home-title" data-filter-title>
 				<span class="home-title-text">
-					<span data-post-list-title>HOME</span>
-					<strong data-visible-post-count>{posts.length}</strong>
+					<span data-post-list-title>{initialListTitle}</span>
+					<strong data-visible-post-count>{initialPostCount}</strong>
 				</span>
 				<span class="page-size-control" aria-label="페이지당 게시글 수">
 					<button type="button" data-page-size-option="5" aria-pressed="true">5</button>
@@ -114,6 +129,7 @@ function searchPreview(post: (typeof posts)[number]) {
 								data-category={postCategory(post)}
 								data-tags={postTags(post).join('|')}
 								data-year={postYear(post)}
+								hidden={!initialFilteredPosts.includes(post)}
 							>
 								<div class="timeline-date" aria-hidden="true">
 									<strong data-timeline-year></strong>
@@ -179,13 +195,27 @@ function searchPreview(post: (typeof posts)[number]) {
 	const pagePrev = document.querySelector<HTMLButtonElement>('[data-page-prev]');
 	const pageNext = document.querySelector<HTMLButtonElement>('[data-page-next]');
 	const pageStatus = document.querySelector<HTMLElement>('[data-page-status]');
+	const mobilePaginationQuery = window.matchMedia('(max-width: 900px)');
 	let searchQuery = '';
 	let currentViewMode = 'posts';
 	let currentPage = 1;
-	let pageSize = Number(window.localStorage.getItem('postPageSize') ?? '5');
+	let pageSize = mobilePaginationQuery.matches ? 10 : Number(window.localStorage.getItem('postPageSize') ?? '5');
 
 	if (![5, 10, 20].includes(pageSize)) {
-		pageSize = 5;
+		pageSize = mobilePaginationQuery.matches ? 10 : 5;
+	}
+
+	function syncMobilePageSize() {
+		if (!mobilePaginationQuery.matches) return;
+
+		pageSize = 10;
+		currentPage = 1;
+
+		for (const pageSizeButton of pageSizeButtons) {
+			pageSizeButton.setAttribute('aria-pressed', String(Number(pageSizeButton.dataset.pageSizeOption) === 10));
+		}
+
+		applyPostFilters();
 	}
 
 	function updateTimelineYears() {
@@ -225,6 +255,7 @@ function searchPreview(post: (typeof posts)[number]) {
 
 	function applyPostFilters() {
 		const matchedItems = postItems.filter((item) => matchesRouteFilter(item));
+		const matchedItemIndexes = new Map(matchedItems.map((item, index) => [item, index]));
 		const visibleCount = matchedItems.length;
 		const shouldPaginate = currentViewMode === 'posts';
 		const totalPages = shouldPaginate ? Math.max(1, Math.ceil(visibleCount / pageSize)) : 1;
@@ -234,7 +265,7 @@ function searchPreview(post: (typeof posts)[number]) {
 		const pageEnd = pageStart + pageSize;
 
 		for (const item of postItems) {
-			const matchedIndex = matchedItems.indexOf(item);
+			const matchedIndex = matchedItemIndexes.get(item) ?? -1;
 			const isVisible =
 				matchedIndex >= 0 && (!shouldPaginate || (matchedIndex >= pageStart && matchedIndex < pageEnd));
 			item.hidden = !isVisible;
@@ -268,6 +299,22 @@ function searchPreview(post: (typeof posts)[number]) {
 	}
 
 	function applySearchResults() {
+		if (!searchQuery) {
+			for (const result of searchResults) {
+				result.hidden = true;
+			}
+
+			if (emptySearch) {
+				emptySearch.hidden = true;
+			}
+
+			if (searchPanel) {
+				searchPanel.dataset.searchActive = 'false';
+			}
+
+			return;
+		}
+
 		let visibleCount = 0;
 
 		for (const result of searchResults) {
@@ -345,14 +392,30 @@ function searchPreview(post: (typeof posts)[number]) {
 		applyPostFilters();
 	}
 
-	setViewMode(window.localStorage.getItem('postViewMode') ?? 'posts');
+	function scheduleViewMode(viewMode: string) {
+		const nextViewMode = viewMode === 'timeline' ? 'timeline' : 'posts';
 
-	for (const button of viewButtons) {
-		button.addEventListener('click', () => {
+		if (postList) {
+			postList.dataset.viewChanging = 'true';
+		}
+
+		window.requestAnimationFrame(() => {
 			currentPage = 1;
-			setViewMode(button.dataset.viewButton ?? 'posts');
+			setViewMode(nextViewMode);
+
+			window.requestAnimationFrame(() => {
+				if (postList) {
+					delete postList.dataset.viewChanging;
+				}
+			});
 		});
 	}
+
+	setViewMode(window.localStorage.getItem('postViewMode') ?? 'posts');
+
+	window.addEventListener('post-view-mode-change', (event) => {
+		scheduleViewMode(String((event as CustomEvent<string>).detail ?? 'posts'));
+	});
 
 	for (const button of pageSizeButtons) {
 		button.setAttribute('aria-pressed', String(Number(button.dataset.pageSizeOption) === pageSize));
@@ -371,6 +434,8 @@ function searchPreview(post: (typeof posts)[number]) {
 			applyPostFilters();
 		});
 	}
+
+	mobilePaginationQuery.addEventListener('change', syncMobilePageSize);
 
 	pagePrev?.addEventListener('click', () => {
 		currentPage = Math.max(1, currentPage - 1);
@@ -411,8 +476,8 @@ function searchPreview(post: (typeof posts)[number]) {
 		applySearchResults();
 	});
 
-	applyPostFilters();
 	applySearchResults();
+	delete document.documentElement.dataset.routeFilterPending;
 
 	if (shouldOpenSearch) {
 		openSearchPanel();
@@ -426,6 +491,11 @@ function searchPreview(post: (typeof posts)[number]) {
 		border: 1px solid rgba(255, 255, 255, 0.58);
 		border-radius: 20px;
 		box-shadow: 0 20px 48px rgba(20, 24, 40, 0.08);
+	}
+
+	:global(html[data-route-filter-pending='true']) .home-post-frame {
+		opacity: 0;
+		pointer-events: none;
 	}
 
 	.search-panel {
@@ -584,6 +654,7 @@ function searchPreview(post: (typeof posts)[number]) {
 		display: flex;
 		align-items: baseline;
 		gap: 8px;
+		min-width: 0;
 	}
 
 	.home-title[hidden] {
@@ -603,17 +674,19 @@ function searchPreview(post: (typeof posts)[number]) {
 		display: flex;
 		align-items: center;
 		gap: 4px;
+		height: 34px;
 		padding: 3px;
-		border: 1px solid rgba(255, 255, 255, 0.7);
+		border: 1px solid rgba(255, 255, 255, 0.58);
 		border-radius: 999px;
-		background: rgba(255, 255, 255, 0.58);
+		background: rgba(255, 255, 255, 0.64);
+		backdrop-filter: blur(16px);
 	}
 
 	.page-size-control button {
 		width: 28px;
-		height: 24px;
+		height: 28px;
 		border: 0;
-		border-radius: 999px;
+		border-radius: 50%;
 		background: transparent;
 		color: var(--muted);
 		font-size: 11px;
@@ -621,15 +694,21 @@ function searchPreview(post: (typeof posts)[number]) {
 		cursor: pointer;
 		transition:
 			background 160ms ease,
-			color 160ms ease;
+			color 160ms ease,
+			transform 160ms ease;
 	}
 
 	.page-size-control button:hover,
 	.page-size-control button:focus-visible,
 	.page-size-control button[aria-pressed='true'] {
-		background: #fff;
+		background: color-mix(in srgb, var(--accent) 10%, transparent);
 		color: var(--accent);
+		transform: translateY(-1px);
 		outline: 0;
+	}
+
+	.page-size-control button[aria-pressed='true'] {
+		transform: none;
 	}
 
 	.home-post-list {
@@ -638,6 +717,14 @@ function searchPreview(post: (typeof posts)[number]) {
 		margin: 0;
 		padding: 0;
 		list-style: none;
+		transition:
+			opacity 120ms ease,
+			transform 120ms ease;
+	}
+
+	.home-post-list[data-view-changing='true'] {
+		opacity: 0.42;
+		transform: translateY(3px);
 	}
 
 	.home-post-list [hidden] {
@@ -646,6 +733,7 @@ function searchPreview(post: (typeof posts)[number]) {
 
 	.home-post-list a {
 		display: block;
+		min-width: 0;
 		padding: 22px 20px;
 		border: 1px solid rgba(255, 255, 255, 0.82);
 		border-radius: 20px;
@@ -792,6 +880,7 @@ function searchPreview(post: (typeof posts)[number]) {
 		font-size: 16px;
 		font-weight: 700;
 		text-decoration: none;
+		overflow-wrap: anywhere;
 	}
 
 	.home-post-title::after {
@@ -839,6 +928,7 @@ function searchPreview(post: (typeof posts)[number]) {
 		align-items: center;
 		gap: 8px;
 		flex-wrap: wrap;
+		min-width: 0;
 		color: var(--muted);
 		font-size: 11px;
 	}
@@ -872,9 +962,11 @@ function searchPreview(post: (typeof posts)[number]) {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 5px;
+		min-width: 0;
 	}
 
 	.home-post-tags em {
+		max-width: 100%;
 		padding: 3px 7px;
 		border-radius: 999px;
 		background: color-mix(in srgb, var(--accent) 10%, transparent);
@@ -882,6 +974,7 @@ function searchPreview(post: (typeof posts)[number]) {
 		font-size: 11px;
 		font-style: normal;
 		font-weight: 700;
+		overflow-wrap: anywhere;
 	}
 
 	.home-post-list[data-view='timeline'] .home-post-tags {
@@ -963,6 +1056,10 @@ function searchPreview(post: (typeof posts)[number]) {
 			font-size: 24px;
 			align-items: flex-start;
 			flex-direction: column;
+		}
+
+		.page-size-control {
+			display: none;
 		}
 
 		.home-post-list[data-view='timeline'] {
