@@ -1,0 +1,5 @@
+#!/bin/sh
+
+echo "🖼️ Convert staged images to WebP..."
+
+node scripts/convert-images.mjs
