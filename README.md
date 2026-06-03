@@ -8,16 +8,31 @@
 
 | 카테고리 | 게시글 수 |
 | --- | ---: |
-| 전체 | 1 |
+| 전체 | 2 |
+| TIL | 1 |
 | 기타 | 1 |
 
 ### 태그별 게시글 수
 
 | 태그 | 게시글 수 |
 | --- | ---: |
+| android | 1 |
+| architecture | 1 |
 | blog | 1 |
+| mvi | 1 |
+| mvvm | 1 |
 
 <!-- BLOG_STATS_END -->
+
+## TIL
+
+<!-- TIL_STATS_START -->
+
+| 날짜 | 제목 | 태그 |
+| --- | --- | --- |
+| 2026-06-04 | [0001 - Android UI Architecture](content/post/0001%20-%20Android%20UI%20Architecture.md) | android, architecture, mvvm, mvi |
+
+<!-- TIL_STATS_END -->
 
 ## 기타
 

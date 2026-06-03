@@ -112,13 +112,21 @@ function postLink(post) {
   return `[${escapeTable(post.title)}](${encodeURI(post.path)})`;
 }
 
+function compareCategories(a, b) {
+  if (a === "TIL") return -1;
+  if (b === "TIL") return 1;
+  if (a === "기타") return 1;
+  if (b === "기타") return -1;
+  return a.localeCompare(b, "ko");
+}
+
 function renderStats(posts) {
   const categoryCounts = countBy(posts, (post) => post.category);
   const tagCounts = countBy(posts.flatMap((post) => post.tags), (tag) => tag);
   const categoryRows = [
     `| 전체 | ${posts.length} |`,
     ...[...categoryCounts.entries()]
-      .sort(([a], [b]) => a.localeCompare(b, "ko"))
+      .sort(([a], [b]) => compareCategories(a, b))
       .map(([category, count]) => `| ${escapeTable(category)} | ${count} |`),
   ];
   const tagRows = [...tagCounts.entries()]
@@ -191,11 +199,7 @@ function renderCategorySection(category, posts) {
 }
 
 function renderReadme(posts) {
-  const categories = [...new Set(posts.map((post) => post.category))].sort((a, b) => {
-    if (a === "TIL") return -1;
-    if (b === "TIL") return 1;
-    return a.localeCompare(b, "ko");
-  });
+  const categories = [...new Set(posts.map((post) => post.category))].sort(compareCategories);
   const sections = [];
   const tilSection = renderTilSection(posts);
 
@@ -215,7 +219,7 @@ function renderReadme(posts) {
     "",
     renderStats(posts),
     "",
-    ...sections,
+    sections.join("\n\n"),
     "",
   ].join("\n");
 }
