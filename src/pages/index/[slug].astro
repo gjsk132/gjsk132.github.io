@@ -1,5 +1,6 @@
 ---
 import BlogLayout from '../../components/BlogLayout.astro';
+import IndexTermHighlighter from '../../components/IndexTermHighlighter.astro';
 import Layout from '../../layouts/Layout.astro';
 import { findIndexEntryByReference, getAllIndexEntries } from '../../lib/indexEntries';
 import { getAllPosts, getPostCategories, getPostCategoryCounts, getPostTags } from '../../lib/posts';
@@ -21,6 +22,7 @@ const categoryCounts = getPostCategoryCounts(posts);
 const tags = getPostTags(posts);
 const entries = await getAllIndexEntries();
 const entryTags = entry.frontmatter.tags ?? [];
+const indexTermEntries = entries.filter((item) => item.slug !== entry.slug);
 const relatedEntries = entryTags
 	.map((reference) => findIndexEntryByReference(entries, reference))
 	.filter((relatedEntry) => relatedEntry && relatedEntry.slug !== entry.slug);
@@ -53,6 +55,7 @@ const relatedEntries = entryTags
 			<div class="article-content">
 				<Content />
 			</div>
+			<IndexTermHighlighter entries={indexTermEntries} />
 		</article>
 
 		{

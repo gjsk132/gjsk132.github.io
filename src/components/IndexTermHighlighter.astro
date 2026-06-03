@@ -1,0 +1,278 @@
+---
+interface IndexTerm {
+	slug: string;
+	title: string;
+	definition: string;
+}
+
+interface Props {
+	entries: IndexTerm[];
+	targetSelector?: string;
+}
+
+const targetSelector = Astro.props.targetSelector ?? ".article-content";
+const terms = Astro.props.entries
+	.map((entry) => ({
+		slug: entry.slug,
+		title: entry.title.trim(),
+		definition: entry.definition.trim(),
+	}))
+	.filter((entry) => entry.title && entry.definition)
+	.sort((a, b) => b.title.length - a.title.length);
+---
+
+<template data-index-terms data-target-selector={targetSelector}>{JSON.stringify(terms)}</template>
+
+<script is:inline>
+	(() => {
+		const source = document.querySelector("template[data-index-terms]");
+		const targetSelector = source?.dataset.targetSelector || ".article-content";
+
+		function run() {
+			const roots = Array.from(document.querySelectorAll(targetSelector));
+
+			if (!source || roots.length === 0) return;
+
+			const hasEnhancedRoot = roots.some(
+				(root) => root.dataset.indexTermsEnhanced === "true",
+			);
+
+			if (hasEnhancedRoot) return;
+
+			roots.forEach((root) => {
+				root.dataset.indexTermsEnhanced = "true";
+			});
+
+			let terms = [];
+
+			try {
+				terms = JSON.parse(source.content.textContent || "[]");
+			} catch {
+				return;
+			}
+
+			if (!terms.length) return;
+
+			const termsByTitle = new Map(
+				terms.map((term) => [term.title.toLowerCase(), term]),
+			);
+			const highlightedSlugs = new Set();
+
+			function escapeRegExp(value) {
+				return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+			}
+
+			function termPattern(term) {
+				const escapedTerm = escapeRegExp(term.title);
+				const isAsciiWord = /^[A-Za-z0-9 _-]+$/.test(term.title);
+
+				if (!isAsciiWord) return escapedTerm;
+
+				return `(?<![A-Za-z0-9])${escapedTerm}(?![A-Za-z0-9])`;
+			}
+
+			const pattern = terms.map(termPattern).filter(Boolean).join("|");
+
+			if (!pattern) return;
+
+			const matcher = new RegExp(pattern, "gi");
+
+			for (const root of roots) {
+				const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+					acceptNode(node) {
+						const parent = node.parentElement;
+						const text = node.nodeValue || "";
+
+						if (!parent || !text.trim()) return NodeFilter.FILTER_REJECT;
+						if (
+							parent.closest(
+								"a, code, pre, script, style, textarea, input, button, .index-term-link",
+							)
+						) {
+							return NodeFilter.FILTER_REJECT;
+						}
+
+						matcher.lastIndex = 0;
+
+						if (!matcher.test(text)) return NodeFilter.FILTER_REJECT;
+
+						matcher.lastIndex = 0;
+						return NodeFilter.FILTER_ACCEPT;
+					},
+				});
+				const textNodes = [];
+
+				while (walker.nextNode()) {
+					textNodes.push(walker.currentNode);
+				}
+
+				for (const node of textNodes) {
+					const text = node.nodeValue || "";
+					const fragment = document.createDocumentFragment();
+					let lastIndex = 0;
+					let hasReplacement = false;
+
+					matcher.lastIndex = 0;
+					text.replace(matcher, (match, offset) => {
+						const term = termsByTitle.get(match.toLowerCase());
+
+						if (!term || highlightedSlugs.has(term.slug)) return match;
+
+						if (offset > lastIndex) {
+							fragment.append(
+								document.createTextNode(text.slice(lastIndex, offset)),
+							);
+						}
+
+						const marker = document.createElement("span");
+						marker.className = "index-term-link";
+						marker.textContent = match;
+						marker.dataset.definition = term.definition;
+						marker.setAttribute("tabindex", "0");
+						marker.addEventListener("mouseenter", positionTooltip);
+						marker.addEventListener("focus", positionTooltip);
+
+						fragment.append(marker);
+						highlightedSlugs.add(term.slug);
+						lastIndex = offset + match.length;
+						hasReplacement = true;
+
+						return match;
+					});
+
+					if (!hasReplacement) continue;
+
+					if (lastIndex < text.length) {
+						fragment.append(document.createTextNode(text.slice(lastIndex)));
+					}
+
+					node.parentNode?.replaceChild(fragment, node);
+				}
+			}
+		}
+
+		function positionTooltip(event) {
+			const marker = event.currentTarget;
+			const markerRect = marker.getBoundingClientRect();
+			const tooltipWidth = Math.min(260, window.innerWidth - 32);
+			const markerCenter = markerRect.left + markerRect.width / 2;
+			const minLeft = 16;
+			const maxRight = window.innerWidth - 16;
+			const tooltipLeft = markerCenter - tooltipWidth / 2;
+			const tooltipRight = markerCenter + tooltipWidth / 2;
+			let shift = 0;
+
+			if (tooltipLeft < minLeft) {
+				shift = minLeft - tooltipLeft;
+			} else if (tooltipRight > maxRight) {
+				shift = maxRight - tooltipRight;
+			}
+
+			marker.style.setProperty("--index-tooltip-shift", `${shift}px`);
+		}
+
+		if (document.readyState === "loading") {
+			document.addEventListener("DOMContentLoaded", run, { once: true });
+		} else {
+			run();
+		}
+	})();
+</script>
+
+<style is:global>
+	.post-card .index-term-link {
+		position: relative;
+		display: inline;
+		border-radius: 4px;
+		background: linear-gradient(transparent 34%, #e6e9ff 34%);
+		-webkit-box-decoration-break: clone;
+		box-decoration-break: clone;
+		--index-tooltip-shift: 0px;
+		color: inherit;
+		font-weight: inherit;
+		text-decoration: none;
+		cursor: default;
+
+		transition: background 160ms ease;
+	}
+
+	.post-card .index-term-link:hover,
+	.post-card .index-term-link:focus-visible {
+		background: linear-gradient(transparent 22%, #dce1ff 22%);
+		color: inherit;
+		outline: 0;
+	}
+
+	.post-card .index-term-link::after {
+		content: attr(data-definition);
+
+		position: absolute;
+		left: 50%;
+		bottom: calc(100% + 10px);
+
+		z-index: 20;
+
+		width: max-content;
+		max-width: min(260px, calc(100vw - 32px));
+
+		padding: 10px 12px;
+		border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--line));
+		border-radius: 12px;
+
+		background: rgba(255, 255, 255, 0.96);
+		color: var(--text);
+
+		font-size: 12px;
+		font-weight: 500;
+		line-height: 1.55;
+
+		box-shadow: 0 10px 22px rgba(20, 24, 40, 0.09);
+
+		transform: translateX(calc(-50% + var(--index-tooltip-shift))) translateY(5px);
+		opacity: 0;
+		pointer-events: none;
+
+		transition:
+			opacity 0s linear,
+			transform 0s linear;
+	}
+
+	.post-card .index-term-link::before {
+		content: '';
+		position: absolute;
+		left: 50%;
+		bottom: calc(100% + 5px);
+		z-index: 21;
+		width: 9px;
+		height: 9px;
+		border-right: 1px solid color-mix(in srgb, var(--accent) 16%, var(--line));
+		border-bottom: 1px solid color-mix(in srgb, var(--accent) 16%, var(--line));
+		background: rgba(255, 255, 255, 0.96);
+		transform: translateX(-50%) translateY(5px) rotate(45deg);
+		opacity: 0;
+		pointer-events: none;
+		transition:
+			opacity 0s linear,
+			transform 0s linear;
+	}
+
+	.post-card .index-term-link:hover::after,
+	.post-card .index-term-link:focus-visible::after {
+		opacity: 1;
+		transform: translateX(calc(-50% + var(--index-tooltip-shift))) translateY(0);
+
+		transition:
+			opacity 160ms ease 450ms,
+			transform 160ms ease 450ms;
+	}
+
+	.post-card .index-term-link:hover::before,
+	.post-card .index-term-link:focus-visible::before {
+		opacity: 1;
+		transform: translateX(-50%) translateY(0) rotate(45deg);
+		transition:
+			opacity 160ms ease 450ms,
+			transform 160ms ease 450ms;
+	}
+
+</style>

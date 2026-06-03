@@ -1,6 +1,8 @@
 ---
 import BlogLayout from '../../components/BlogLayout.astro';
+import IndexTermHighlighter from '../../components/IndexTermHighlighter.astro';
 import Layout from '../../layouts/Layout.astro';
+import { getAllIndexEntries } from '../../lib/indexEntries';
 import {
 	formatPostDate,
 	getAllPosts,
@@ -30,6 +32,7 @@ const postCategory = post.frontmatter.category ?? post.frontmatter.categories?.[
 const postTags = post.frontmatter.tags ?? [];
 const postDescription = post.frontmatter.description ?? post.frontmatter.summary;
 const postDate = getPostDate(post);
+const indexEntries = await getAllIndexEntries();
 const currentPostIndex = posts.findIndex((item) => item.slug === post.slug);
 const nextPost = currentPostIndex > 0 ? posts[currentPostIndex - 1] : undefined;
 const previousPost =
@@ -54,6 +57,7 @@ function navPostTags(navPost: (typeof posts)[number]) {
 		activeTags={postTags}
 	>
 		<article class="post-card">
+			<IndexTermHighlighter entries={indexEntries} targetSelector=".article-content" />
 			{postDate && <time class="post-date" datetime={new Date(postDate).toISOString()}>{formatPostDate(postDate)}</time>}
 			<h1>{title}</h1>
 			{postDescription && <p class="post-description">{postDescription}</p>}
