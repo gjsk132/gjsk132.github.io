@@ -75,8 +75,11 @@ function isActiveTag(tag: string) {
 			</svg>
 		</a>
 
-		<details class="mobile-filter">
-			<summary>Category</summary>
+		<details class="mobile-filter" data-mobile-filter>
+			<summary>
+				<span class="mobile-filter-label-full">Category</span>
+				<span class="mobile-filter-label-short" aria-hidden="true">C</span>
+			</summary>
 			<div class="mobile-filter-menu">
 				{
 					categories.map((category) => (
@@ -93,8 +96,11 @@ function isActiveTag(tag: string) {
 			</div>
 		</details>
 
-		<details class="mobile-filter">
-			<summary>Tag</summary>
+		<details class="mobile-filter" data-mobile-filter>
+			<summary>
+				<span class="mobile-filter-label-full">Tag</span>
+				<span class="mobile-filter-label-short" aria-hidden="true">T</span>
+			</summary>
 			<div class="mobile-filter-menu mobile-tag-menu">
 				{
 					tags.length > 0 ? (
@@ -205,6 +211,7 @@ function isActiveTag(tag: string) {
 	const searchOpenButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-search-open]'));
 	const topTools = document.querySelector<HTMLElement>('[data-top-tools]');
 	const mobileTopbar = document.querySelector<HTMLElement>('[data-mobile-topbar]');
+	const mobileFilters = Array.from(document.querySelectorAll<HTMLDetailsElement>('[data-mobile-filter]'));
 	let lastScrollY = window.scrollY;
 	let ticking = false;
 
@@ -280,6 +287,45 @@ function isActiveTag(tag: string) {
 				}),
 			);
 		});
+	});
+
+	function positionMobileFilterMenu(filter: HTMLDetailsElement) {
+		const menu = filter.querySelector<HTMLElement>('.mobile-filter-menu');
+		if (!menu) return;
+
+		menu.style.setProperty('--mobile-menu-shift', '0px');
+
+		window.requestAnimationFrame(() => {
+			const menuRect = menu.getBoundingClientRect();
+			const gutter = 10;
+			let shift = 0;
+
+			if (menuRect.left < gutter) {
+				shift = gutter - menuRect.left;
+			} else if (menuRect.right > window.innerWidth - gutter) {
+				shift = window.innerWidth - gutter - menuRect.right;
+			}
+
+			menu.style.setProperty('--mobile-menu-shift', `${shift}px`);
+		});
+	}
+
+	mobileFilters.forEach((filter) => {
+		filter.addEventListener('toggle', () => {
+			if (!filter.open) return;
+
+			for (const otherFilter of mobileFilters) {
+				if (otherFilter !== filter) otherFilter.open = false;
+			}
+
+			positionMobileFilterMenu(filter);
+		});
+	});
+
+	window.addEventListener('resize', () => {
+		for (const filter of mobileFilters) {
+			if (filter.open) positionMobileFilterMenu(filter);
+		}
 	});
 
 	window.addEventListener(
@@ -743,7 +789,7 @@ function isActiveTag(tag: string) {
 			right: 10px;
 			z-index: 20;
 			display: grid;
-			grid-template-columns: 34px 34px minmax(64px, 1fr) minmax(54px, 0.8fr) 34px auto;
+			grid-template-columns: 34px 34px minmax(64px, max-content) minmax(54px, max-content) 1fr 34px max-content;
 			align-items: center;
 			gap: 6px;
 			min-height: 48px;
@@ -753,6 +799,7 @@ function isActiveTag(tag: string) {
 			background: rgba(255, 255, 255, 0.72);
 			box-shadow: 0 14px 34px rgba(20, 24, 40, 0.1);
 			backdrop-filter: blur(18px);
+			-webkit-tap-highlight-color: transparent;
 			transition:
 				opacity 180ms ease,
 				transform 180ms ease;
@@ -774,6 +821,9 @@ function isActiveTag(tag: string) {
 			background: #fff;
 			color: var(--text);
 			box-shadow: var(--shadow);
+			-webkit-tap-highlight-color: transparent;
+			-webkit-touch-callout: none;
+			touch-action: manipulation;
 		}
 
 		.mobile-icon-button {
@@ -809,6 +859,7 @@ function isActiveTag(tag: string) {
 			white-space: nowrap;
 			list-style: none;
 			cursor: pointer;
+			user-select: none;
 			transition:
 				background 160ms ease,
 				color 160ms ease,
@@ -816,6 +867,10 @@ function isActiveTag(tag: string) {
 		}
 
 		.mobile-filter summary::-webkit-details-marker {
+			display: none;
+		}
+
+		.mobile-filter-label-short {
 			display: none;
 		}
 
@@ -858,6 +913,7 @@ function isActiveTag(tag: string) {
 			background: rgba(255, 255, 255, 0.96);
 			box-shadow: 0 18px 38px rgba(20, 24, 40, 0.14);
 			backdrop-filter: blur(18px);
+			transform: translateX(var(--mobile-menu-shift, 0px));
 		}
 
 		.mobile-filter:nth-of-type(2) .mobile-filter-menu {
@@ -878,6 +934,8 @@ function isActiveTag(tag: string) {
 			font-size: 12px;
 			text-decoration: none;
 			overflow-wrap: anywhere;
+			-webkit-tap-highlight-color: transparent;
+			touch-action: manipulation;
 		}
 
 		.mobile-filter-menu a span {
@@ -903,9 +961,11 @@ function isActiveTag(tag: string) {
 
 		.mobile-view-toggle {
 			position: relative;
+			justify-self: start;
 			display: flex;
 			align-items: center;
 			gap: 4px;
+			width: max-content;
 			padding: 3px;
 			border: 1px solid rgba(255, 255, 255, 0.82);
 			background:
@@ -914,6 +974,10 @@ function isActiveTag(tag: string) {
 			box-shadow:
 				inset 0 1px 0 rgba(255, 255, 255, 0.72),
 				0 10px 22px rgba(20, 24, 40, 0.07);
+		}
+
+		.mobile-icon-button[data-search-open] {
+			grid-column: 6;
 		}
 
 		.mobile-view-toggle button {
@@ -926,6 +990,8 @@ function isActiveTag(tag: string) {
 			background: transparent;
 			color: var(--muted);
 			cursor: pointer;
+			-webkit-tap-highlight-color: transparent;
+			touch-action: manipulation;
 			transition:
 				background 160ms ease,
 				color 160ms ease,
@@ -955,6 +1021,37 @@ function isActiveTag(tag: string) {
 			width: 17px;
 			height: 17px;
 			fill: currentColor;
+		}
+
+		@media (max-width: 390px) {
+			.mobile-topbar {
+				grid-template-columns: 32px 32px 36px 36px 1fr 32px max-content;
+				gap: 5px;
+				padding: 6px;
+			}
+
+			.mobile-icon-button,
+			.mobile-filter summary,
+			.mobile-view-toggle {
+				height: 32px;
+			}
+
+			.mobile-filter summary {
+				padding: 0 8px;
+			}
+
+			.mobile-filter-label-full {
+				display: none;
+			}
+
+			.mobile-filter-label-short {
+				display: inline;
+			}
+
+			.mobile-view-toggle button {
+				width: 26px;
+				height: 26px;
+			}
 		}
 	}
 </style>
