@@ -9,8 +9,10 @@ import {
 	getPostDate,
 	getPostTags,
 } from '../lib/posts';
+import { getAllIndexEntries } from '../lib/indexEntries';
 
 const posts = await getAllPosts();
+const indexEntries = await getAllIndexEntries();
 const categories = getPostCategories(posts);
 const categoryCounts = getPostCategoryCounts(posts);
 const tags = getPostTags(posts);
@@ -61,8 +63,33 @@ function plainPostBody(post: (typeof posts)[number]) {
 		.trim();
 }
 
+function plainIndexBody(indexEntry: (typeof indexEntries)[number]) {
+	return indexEntry.body
+		.replace(/```[\s\S]*?```/g, ' ')
+		.replace(/!\[\[[^\]]+\]\]/g, ' ')
+		.replace(/!\[[^\]]*\]\([^)]+\)/g, ' ')
+		.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+		.replace(/[#>*_`~|[\]-]/g, ' ')
+		.replace(/\s+/g, ' ')
+		.trim();
+}
+
 function searchPreview(post: (typeof posts)[number]) {
 	return plainPostBody(post) || post.excerpt;
+}
+
+function indexEntryTags(entry: (typeof indexEntries)[number]) {
+	return entry.frontmatter.tags ?? [];
+}
+
+function indexEntryReferenceKeys(entry: (typeof indexEntries)[number]) {
+	return [
+		entry.title,
+		entry.slug,
+		entry.slug.split('/').at(-1) ?? '',
+	]
+		.map((value) => value.toLowerCase())
+		.join('|');
 }
 ---
 
@@ -90,9 +117,14 @@ function searchPreview(post: (typeof posts)[number]) {
 								href={`/blog/${post.slug}/`}
 								data-search-result
 								data-search-title={(post.frontmatter.title ?? post.slug).toLowerCase()}
+								data-search-summary={post.excerpt.toLowerCase()}
+								data-search-tags={postTags(post).join(' ').toLowerCase()}
 								data-search-body={plainPostBody(post).toLowerCase()}
 								data-result-title={post.frontmatter.title ?? post.slug}
-								data-result-preview={searchPreview(post)}
+								data-result-summary={post.excerpt}
+								data-result-tags={postTags(post).map((tag) => `#${tag}`).join(' ')}
+								data-result-body={plainPostBody(post)}
+								data-result-fallback={searchPreview(post)}
 								hidden
 							>
 								<strong data-result-title-text>{post.frontmatter.title ?? post.slug}</strong>
@@ -100,6 +132,31 @@ function searchPreview(post: (typeof posts)[number]) {
 								<div class="search-result-meta">
 									<span>{postCategory(post)}</span>
 									{postTags(post).map((tag) => <span>#{tag}</span>)}
+								</div>
+							</a>
+						))
+					}
+					{
+						indexEntries.map((indexEntry) => (
+							<a
+								href={`/index/${indexEntry.slug}/`}
+								data-search-result
+								data-search-title={indexEntry.title.toLowerCase()}
+								data-search-summary={indexEntry.definition.toLowerCase()}
+								data-search-tags=""
+								data-search-body={plainIndexBody(indexEntry).toLowerCase()}
+								data-result-title={indexEntry.title}
+								data-result-summary={indexEntry.definition}
+								data-result-tags=""
+								data-result-body={plainIndexBody(indexEntry)}
+								data-result-fallback={indexEntry.definition || plainIndexBody(indexEntry)}
+								hidden
+							>
+								<strong data-result-title-text>{indexEntry.title}</strong>
+								<p data-result-preview-text>{indexEntry.definition}</p>
+								<div class="search-result-meta">
+									<span>Index</span>
+									{indexEntryTags(indexEntry).map((tag) => <span>#{tag}</span>)}
 								</div>
 							</a>
 						))
@@ -119,6 +176,27 @@ function searchPreview(post: (typeof posts)[number]) {
 					<button type="button" data-page-size-option="20" aria-pressed="false">20</button>
 				</span>
 			</h1>
+
+			{
+				indexEntries.map((indexEntry) => (
+					<aside
+						class="tag-index-summary"
+						aria-label={`${indexEntry.title} Index 설명`}
+						data-tag-index-summary
+						data-index-reference-keys={indexEntryReferenceKeys(indexEntry)}
+						hidden
+					>
+						<p>
+							{indexEntry.definition}
+						</p>
+						<a href={`/index/${indexEntry.slug}/`} aria-label={`${indexEntry.title} Index 보기`} title="Index 보기">
+							<svg aria-hidden="true" viewBox="0 0 24 24">
+								<path d="M7 5h6v2H7v10h10v-6h2v6.2c0 1-.8 1.8-1.8 1.8H6.8c-1 0-1.8-.8-1.8-1.8V6.8c0-1 .8-1.8 1.8-1.8H13Zm8 0h4v4h-2V8.4l-5.3 5.3-1.4-1.4L15.6 7H15V5Z" />
+							</svg>
+						</a>
+					</aside>
+				))
+			}
 
 			{
 				posts.length > 0 ? (
@@ -190,6 +268,7 @@ function searchPreview(post: (typeof posts)[number]) {
 	const searchInput = document.querySelector<HTMLInputElement>('[data-search-input]');
 	const searchResults = Array.from(document.querySelectorAll<HTMLElement>('[data-search-result]'));
 	const emptySearch = document.querySelector<HTMLElement>('[data-empty-search]');
+	const tagIndexSummaries = Array.from(document.querySelectorAll<HTMLElement>('[data-tag-index-summary]'));
 	const pageSizeButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-page-size-option]'));
 	const pagination = document.querySelector<HTMLElement>('[data-pagination]');
 	const pagePrev = document.querySelector<HTMLButtonElement>('[data-page-prev]');
@@ -318,9 +397,8 @@ function searchPreview(post: (typeof posts)[number]) {
 		let visibleCount = 0;
 
 		for (const result of searchResults) {
-			const title = result.dataset.searchTitle ?? '';
-			const body = result.dataset.searchBody ?? '';
-			const isVisible = Boolean(searchQuery) && (title.includes(searchQuery) || body.includes(searchQuery));
+			const matchedField = firstMatchedSearchField(result, searchQuery);
+			const isVisible = Boolean(matchedField);
 			const resultTitle = result.querySelector<HTMLElement>('[data-result-title-text]');
 			const resultPreview = result.querySelector<HTMLElement>('[data-result-preview-text]');
 
@@ -329,7 +407,7 @@ function searchPreview(post: (typeof posts)[number]) {
 			}
 
 			if (resultPreview) {
-				resultPreview.innerHTML = highlightText(result.dataset.resultPreview ?? '', searchQuery);
+				resultPreview.innerHTML = highlightText(searchResultPreview(result, matchedField, searchQuery), searchQuery);
 			}
 
 			result.hidden = !isVisible;
@@ -342,6 +420,62 @@ function searchPreview(post: (typeof posts)[number]) {
 
 		if (searchPanel) {
 			searchPanel.dataset.searchActive = String(Boolean(searchQuery));
+		}
+	}
+
+	function firstMatchedSearchField(result: HTMLElement, query: string) {
+		const fields = [
+			['title', result.dataset.searchTitle ?? ''],
+			['summary', result.dataset.searchSummary ?? ''],
+			['tags', result.dataset.searchTags ?? ''],
+			['body', result.dataset.searchBody ?? ''],
+		] as const;
+
+		return fields.find(([, value]) => value.includes(query))?.[0] ?? '';
+	}
+
+	function searchResultPreview(result: HTMLElement, matchedField: string, query: string) {
+		if (matchedField === 'summary') {
+			return result.dataset.resultSummary || result.dataset.resultFallback || '';
+		}
+
+		if (matchedField === 'tags') {
+			return result.dataset.resultTags || result.dataset.resultFallback || '';
+		}
+
+		if (matchedField === 'body') {
+			return snippetAroundMatch(result.dataset.resultBody || result.dataset.resultFallback || '', query);
+		}
+
+		return result.dataset.resultFallback || result.dataset.resultSummary || result.dataset.resultBody || '';
+	}
+
+	function snippetAroundMatch(value: string, query: string) {
+		const normalizedValue = value.replace(/\s+/g, ' ').trim();
+		if (!query) return normalizedValue;
+
+		const lowerValue = normalizedValue.toLowerCase();
+		const matchIndex = lowerValue.indexOf(query.toLowerCase());
+		if (matchIndex < 0) return normalizedValue;
+
+		const radius = 72;
+		const start = Math.max(0, matchIndex - radius);
+		const end = Math.min(normalizedValue.length, matchIndex + query.length + radius);
+		const prefix = start > 0 ? '...' : '';
+		const suffix = end < normalizedValue.length ? '...' : '';
+
+		return `${prefix}${normalizedValue.slice(start, end)}${suffix}`;
+	}
+
+	function applyTagIndexSummary() {
+		const tag = selectedTag?.toLowerCase();
+		let hasVisibleSummary = false;
+
+		for (const summary of tagIndexSummaries) {
+			const referenceKeys = summary.dataset.indexReferenceKeys?.split('|').filter(Boolean) ?? [];
+			const isVisible = Boolean(tag) && !hasVisibleSummary && referenceKeys.includes(tag ?? '');
+			summary.hidden = !isVisible;
+			if (isVisible) hasVisibleSummary = true;
 		}
 	}
 
@@ -477,6 +611,7 @@ function searchPreview(post: (typeof posts)[number]) {
 	});
 
 	applySearchResults();
+	applyTagIndexSummary();
 	delete document.documentElement.dataset.routeFilterPending;
 
 	if (shouldOpenSearch) {
@@ -664,6 +799,75 @@ function searchPreview(post: (typeof posts)[number]) {
 	.home-title strong {
 		color: var(--accent);
 		font-size: 23px;
+	}
+
+	.tag-index-summary {
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 16px;
+		margin: -8px 0 18px;
+		padding: 10px 0 14px 16px;
+		border-bottom: 1px solid var(--line);
+		color: var(--text);
+	}
+
+	.tag-index-summary[hidden] {
+		display: none;
+	}
+
+	.tag-index-summary::before {
+		content: '';
+		position: absolute;
+		top: 10px;
+		bottom: 14px;
+		left: 0;
+		width: 3px;
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--accent) 72%, white);
+	}
+
+	.tag-index-summary p {
+		margin: 0;
+		color: rgba(0, 0, 0, 0.68);
+		font-size: 14px;
+		line-height: 1.7;
+	}
+
+	.tag-index-summary a {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex: 0 0 auto;
+		width: 34px;
+		height: 34px;
+		padding: 0;
+		border: 0;
+		border-radius: 50%;
+		background: color-mix(in srgb, var(--accent) 10%, transparent);
+		color: var(--accent);
+		text-decoration: none;
+		transition:
+			background 160ms ease,
+			color 160ms ease,
+			box-shadow 160ms ease,
+			transform 160ms ease;
+	}
+
+	.tag-index-summary a svg {
+		width: 17px;
+		height: 17px;
+		fill: currentColor;
+	}
+
+	.tag-index-summary a:hover,
+	.tag-index-summary a:focus-visible {
+		background: color-mix(in srgb, var(--accent) 16%, white);
+		color: var(--accent);
+		box-shadow: 0 10px 22px rgba(45, 84, 255, 0.08);
+		transform: translateY(-1px);
+		outline: 0;
 	}
 
 	.home-title[data-view-mode='timeline'] .page-size-control {
@@ -1056,6 +1260,15 @@ function searchPreview(post: (typeof posts)[number]) {
 			font-size: 24px;
 			align-items: flex-start;
 			flex-direction: column;
+		}
+
+		.tag-index-summary {
+			align-items: flex-start;
+			padding-bottom: 18px;
+		}
+
+		.tag-index-summary a {
+			margin-top: 2px;
 		}
 
 		.page-size-control {
