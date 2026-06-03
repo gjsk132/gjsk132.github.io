@@ -1,5 +1,4 @@
 ---
-summary:
+define:
 tags:
-property:
 ---
