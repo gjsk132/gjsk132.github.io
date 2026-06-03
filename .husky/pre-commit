@@ -1,0 +1,3 @@
+node scripts/convert-images.mjs
+node scripts/update-readme.mjs
+git add README.md
