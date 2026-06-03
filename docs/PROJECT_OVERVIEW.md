@@ -18,6 +18,8 @@ Astro 6 기반의 정적 개인 블로그입니다. Obsidian에서 작성한 Mar
 작업 규칙상 `npm run dev`, `git status`, `git commit`, `git push`는 사용자가 요청할 때만 실행합니다.
 사용자는 기본적으로 Git Bash를 사용하므로 문서와 안내 명령은 Git Bash 기준으로 작성합니다.
 
+pre-commit 훅에서는 `node scripts/update-readme.mjs --staged`를 사용합니다. 이 모드는 파일시스템 전체가 아니라 Git index에 스테이징된 `content/post/**/*.md` 상태만 읽어서 README를 갱신합니다. 따라서 커밋에 포함되지 않는 미스테이징 글은 README에 반영하지 않습니다.
+
 ## 주요 디렉터리
 
 - `AGENTS.md`: Codex와 AI 코딩 도구가 따라야 하는 프로젝트 작업 규칙입니다.

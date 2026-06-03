@@ -1,10 +1,12 @@
 import fs from "fs";
 import path from "path";
+import { execFileSync } from "child_process";
 
 const POST_DIR = "content/post";
 const README_PATH = "README.md";
 const BLOG_URL = "https://gjsk132.github.io";
 const CATEGORY_MARKER_NAMES = { 기타: "ETC" };
+const USE_STAGED_POSTS = process.argv.includes("--staged");
 
 function walk(dir) {
   if (!fs.existsSync(dir)) return [];
@@ -15,6 +17,30 @@ function walk(dir) {
     if (entry.isDirectory()) return walk(fullPath);
     if (entry.isFile() && path.extname(entry.name).toLowerCase() === ".md") return [fullPath];
     return [];
+  });
+}
+
+function gitPath(filePath) {
+  return filePath.replaceAll("\\", "/");
+}
+
+function listStagedPostFiles() {
+  const output = execFileSync("git", ["ls-files", "-z", "--cached", "--", `${POST_DIR}/`], {
+    encoding: "utf-8",
+  });
+
+  return output
+    .split("\0")
+    .filter((filePath) => filePath.endsWith(".md"))
+    .sort((a, b) => a.localeCompare(b, "ko"));
+}
+
+function readPostFile(filePath) {
+  if (!USE_STAGED_POSTS) return fs.readFileSync(filePath, "utf-8");
+
+  return execFileSync("git", ["show", `:${gitPath(filePath)}`], {
+    encoding: "utf-8",
+    maxBuffer: 1024 * 1024 * 20,
   });
 }
 
@@ -56,13 +82,13 @@ function parseFrontmatter(raw) {
 }
 
 function normalizePost(filePath) {
-  const raw = fs.readFileSync(filePath, "utf-8");
+  const raw = readPostFile(filePath);
   const frontmatter = parseFrontmatter(raw);
   const tags = Array.isArray(frontmatter.tags) ? frontmatter.tags.filter(Boolean) : [];
 
   return {
     title: path.basename(filePath, path.extname(filePath)),
-    path: filePath.replaceAll("\\", "/"),
+    path: gitPath(filePath),
     date: frontmatter.date || frontmatter.pubDate || "",
     category: frontmatter.category || frontmatter.categories?.[0] || "기타",
     tags,
@@ -224,7 +250,10 @@ function renderReadme(posts) {
   ].join("\n");
 }
 
-const posts = sortPosts(walk(POST_DIR).map(normalizePost).filter((post) => !post.draft));
+const postFiles = USE_STAGED_POSTS ? listStagedPostFiles() : walk(POST_DIR);
+const posts = sortPosts(postFiles.map(normalizePost).filter((post) => !post.draft));
 
 fs.writeFileSync(README_PATH, renderReadme(posts), "utf-8");
-console.log(`README updated with ${posts.length} post(s).`);
+console.log(
+  `README updated with ${posts.length} ${USE_STAGED_POSTS ? "staged " : ""}post(s).`,
+);
