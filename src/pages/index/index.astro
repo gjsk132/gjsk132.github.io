@@ -269,6 +269,7 @@ function entryHref(entry: (typeof entries)[number]) {
 	.index-list[data-view='timeline'] .index-card a {
 		display: flex;
 		align-items: center;
+		gap: 9px;
 		width: fit-content;
 		max-width: 100%;
 		min-height: 42px;
@@ -277,6 +278,32 @@ function entryHref(entry: (typeof entries)[number]) {
 		background: #fff;
 		box-shadow: none;
 		overflow: visible;
+	}
+
+	.index-list[data-view='timeline'] .index-card a::before {
+		content: '';
+		width: 7px;
+		height: 7px;
+		flex: 0 0 auto;
+		border: 3px solid color-mix(in srgb, var(--accent) 18%, white);
+		border-radius: 50%;
+		background: var(--accent);
+		transition:
+			border-color 160ms ease,
+			box-shadow 160ms ease,
+			transform 160ms ease;
+	}
+
+	.index-list[data-view='timeline'] .index-card a:hover,
+	.index-list[data-view='timeline'] .index-card a:focus-visible {
+		box-shadow: 0 12px 28px rgba(20, 24, 40, 0.08);
+	}
+
+	.index-list[data-view='timeline'] .index-card a:hover::before,
+	.index-list[data-view='timeline'] .index-card a:focus-visible::before {
+		border-color: color-mix(in srgb, var(--accent) 28%, white);
+		box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 8%, transparent);
+		transform: scale(1.08);
 	}
 
 	.index-list[data-view='timeline'] .index-card-title {
