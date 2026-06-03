@@ -1,3 +1,6 @@
 ---
-define: hello
+define: 하드웨어나 소프트웨어 시스템의 기본 구조와 작동 방식을 서술하는 설계도
+tags:
+  - MVVM
+  - MVI
 ---
