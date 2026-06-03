@@ -1,0 +1,343 @@
+---
+import BlogLayout from '../../components/BlogLayout.astro';
+import Layout from '../../layouts/Layout.astro';
+import { getAllIndexEntries } from '../../lib/indexEntries';
+import { getAllPosts, getPostCategories, getPostCategoryCounts, getPostTags } from '../../lib/posts';
+
+const posts = await getAllPosts();
+const categories = getPostCategories(posts);
+const categoryCounts = getPostCategoryCounts(posts);
+const postTags = getPostTags(posts);
+const entries = await getAllIndexEntries();
+
+function entryTags(entry: (typeof entries)[number]) {
+	return entry.frontmatter.tags ?? [];
+}
+
+function entryAnchor(entry: (typeof entries)[number]) {
+	return `entry-${entry.slug.replace(/[^A-Za-z0-9_-]+/g, '-')}`;
+}
+
+function entryHref(entry: (typeof entries)[number]) {
+	return `/index/${entry.slug}/`;
+}
+---
+
+<Layout title="Index | gjsk132 blog" description="Obsidian 개념 노트를 사전처럼 모아 보는 페이지">
+	<BlogLayout categories={categories} categoryCounts={categoryCounts} tags={postTags} postCount={posts.length}>
+		<section class="index-frame">
+			<header class="index-header">
+				<div>
+					<h1>
+						<span>Index</span>
+						<strong>{entries.length}</strong>
+					</h1>
+				</div>
+			</header>
+
+			<label class="index-search">
+				<svg aria-hidden="true" viewBox="0 0 24 24">
+					<path d="M10.8 4.5a6.3 6.3 0 0 1 5 10.1l3.8 3.8a1 1 0 0 1-1.4 1.4l-3.8-3.8a6.3 6.3 0 1 1-3.6-11.5Zm0 2a4.3 4.3 0 1 0 0 8.6 4.3 4.3 0 0 0 0-8.6Z" />
+				</svg>
+				<input type="search" placeholder="개념 검색" data-index-search />
+			</label>
+
+			{
+				entries.length > 0 ? (
+					<ul class="index-list" data-index-list data-view="posts">
+						{entries.map((entry) => (
+							<li
+								class="index-card"
+								data-index-item
+								data-title={entry.title.toLowerCase()}
+								data-definition={entry.definition.toLowerCase()}
+								data-tags={entryTags(entry).join('|')}
+							>
+								<a
+									href={entryHref(entry)}
+									id={entryAnchor(entry)}
+								>
+									<span class="index-card-title">{entry.title}</span>
+									<span class="index-card-definition">{entry.definition}</span>
+									{entryTags(entry).length > 0 && (
+										<span class="index-card-tags">
+											{entryTags(entry).map((tag) => <em>{tag}</em>)}
+										</span>
+									)}
+								</a>
+							</li>
+						))}
+					</ul>
+				) : (
+					<p class="empty-index">content/index 폴더에 Markdown 파일을 추가하면 개념 사전에 표시됩니다.</p>
+				)
+			}
+			<p class="empty-index" data-empty-index hidden>검색 조건과 맞는 개념이 없습니다.</p>
+		</section>
+	</BlogLayout>
+</Layout>
+
+<script>
+	const searchInput = document.querySelector<HTMLInputElement>('[data-index-search]');
+	const items = Array.from(document.querySelectorAll<HTMLElement>('[data-index-item]'));
+	const emptyIndex = document.querySelector<HTMLElement>('[data-empty-index]');
+	const indexList = document.querySelector<HTMLElement>('[data-index-list]');
+
+	function setIndexViewMode(viewMode: string) {
+		const nextViewMode = viewMode === 'timeline' ? 'timeline' : 'posts';
+		if (indexList) {
+			indexList.dataset.view = nextViewMode;
+		}
+	}
+
+	function applyIndexFilters() {
+		const query = searchInput?.value.trim().toLowerCase() ?? '';
+		let visibleCount = 0;
+
+		for (const item of items) {
+			const tags = item.dataset.tags?.split('|').filter(Boolean) ?? [];
+			const matchesQuery =
+				!query ||
+				(item.dataset.title ?? '').includes(query) ||
+				(item.dataset.definition ?? '').includes(query) ||
+				tags.some((tag) => tag.toLowerCase().includes(query));
+
+			item.hidden = !matchesQuery;
+			if (matchesQuery) visibleCount += 1;
+		}
+
+		if (emptyIndex) {
+			emptyIndex.hidden = visibleCount > 0;
+		}
+	}
+
+	searchInput?.addEventListener('input', applyIndexFilters);
+	setIndexViewMode(window.localStorage.getItem('postViewMode') ?? 'posts');
+
+	window.addEventListener('post-view-mode-change', (event) => {
+		setIndexViewMode(String((event as CustomEvent<string>).detail ?? 'posts'));
+	});
+</script>
+
+<style>
+	.index-frame {
+		padding: 28px 22px 40px;
+		border: 1px solid rgba(255, 255, 255, 0.58);
+		border-radius: 20px;
+		background: rgba(255, 255, 255, 0.18);
+		box-shadow: 0 20px 48px rgba(20, 24, 40, 0.08);
+	}
+
+	.index-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 14px;
+		padding-bottom: 20px;
+		border-bottom: 1px solid var(--line);
+		margin: 0 0 20px;
+	}
+
+	.index-header h1 {
+		display: flex;
+		align-items: baseline;
+		gap: 8px;
+		margin: 0;
+		font-size: 23px;
+		font-weight: 800;
+		line-height: 1.25;
+	}
+
+	.index-header h1 strong {
+		color: var(--accent);
+		font-size: 23px;
+		line-height: 1.2;
+	}
+
+	.index-search {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		width: min(450px, 100%);
+		height: 42px;
+		padding: 0 14px;
+		border: 1px solid rgba(255, 255, 255, 0.72);
+		border-radius: 20px;
+		background: var(--panel-strong);
+		box-shadow: var(--shadow);
+		transition:
+			border-color 160ms ease,
+			box-shadow 160ms ease;
+	}
+
+	.index-search:focus-within {
+		border-color: color-mix(in srgb, var(--accent) 32%, white);
+		box-shadow: 0 14px 32px rgba(45, 84, 255, 0.1);
+	}
+
+	.index-search svg {
+		width: 16px;
+		height: 16px;
+		flex: 0 0 auto;
+		fill: var(--muted);
+	}
+
+	.index-search input {
+		width: 100%;
+		min-width: 0;
+		border: 0;
+		background: transparent;
+		color: var(--text);
+		font-size: 13px;
+		outline: 0;
+	}
+
+	.index-list {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+		gap: 22px;
+		margin: 22px 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.index-card[hidden] {
+		display: none;
+	}
+
+	.index-card a {
+		position: relative;
+		display: grid;
+		gap: 10px;
+		min-height: 148px;
+		padding: 22px 20px;
+		border: 1px solid rgba(255, 255, 255, 0.82);
+		border-radius: 20px;
+		background: var(--panel-strong);
+		color: var(--text);
+		text-decoration: none;
+		box-shadow: none;
+		transition:
+			border-color 160ms ease,
+			box-shadow 160ms ease,
+			transform 160ms ease;
+	}
+
+	.index-card a:hover,
+	.index-card a:focus-visible {
+		border-color: color-mix(in srgb, var(--accent) 24%, white);
+		box-shadow: 0 12px 30px rgba(45, 84, 255, 0.08);
+		transform: translateY(-1px);
+		outline: 0;
+	}
+
+	.index-card-title {
+		font-size: 16px;
+		font-weight: 700;
+		line-height: 1.35;
+		overflow-wrap: anywhere;
+	}
+
+	.index-card-title::after {
+		content: '';
+		display: block;
+		width: 30px;
+		height: 2px;
+		margin-top: 7px;
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--accent) 72%, white);
+	}
+
+	.index-card-definition {
+		display: -webkit-box;
+		color: var(--muted);
+		font-size: 12px;
+		line-height: 1.62;
+		-webkit-line-clamp: 3;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	.index-list[data-view='timeline'] {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 8px;
+		max-width: 520px;
+	}
+
+	.index-list[data-view='timeline'] .index-card a {
+		display: flex;
+		align-items: center;
+		width: fit-content;
+		max-width: 100%;
+		min-height: 42px;
+		padding: 11px 18px;
+		border-radius: 999px;
+		background: #fff;
+		box-shadow: none;
+		overflow: visible;
+	}
+
+	.index-list[data-view='timeline'] .index-card-title {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-size: 14px;
+	}
+
+	.index-list[data-view='timeline'] .index-card-title::after {
+		display: none;
+	}
+
+	.index-list[data-view='timeline'] .index-card-definition,
+	.index-list[data-view='timeline'] .index-card-tags {
+		display: none;
+	}
+
+	.index-card-tags {
+		display: flex;
+		flex-wrap: wrap;
+		align-self: end;
+		gap: 5px;
+	}
+
+	.index-card-tags em {
+		max-width: 100%;
+		padding: 3px 7px;
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--accent) 10%, transparent);
+		color: var(--accent);
+		font-size: 11px;
+		font-style: normal;
+		font-weight: 700;
+		overflow-wrap: anywhere;
+	}
+
+	.empty-index {
+		margin: 18px 0 0;
+		color: var(--muted);
+		font-size: 13px;
+		line-height: 1.7;
+	}
+
+	.empty-index[hidden] {
+		display: none;
+	}
+
+	@media (max-width: 900px) {
+		.index-frame {
+			padding: 24px 18px;
+		}
+
+		.index-header {
+			align-items: flex-start;
+			flex-direction: column;
+		}
+
+		.index-list {
+			grid-template-columns: 1fr;
+		}
+
+	}
+</style>
