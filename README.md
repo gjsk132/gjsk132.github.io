@@ -10,7 +10,7 @@
 | --- | ---: |
 | 전체 | 2 |
 | TIL | 1 |
-| 기타 | 1 |
+| 블로그 | 1 |
 
 ### 태그별 게시글 수
 
@@ -34,12 +34,12 @@
 
 <!-- TIL_STATS_END -->
 
-## 기타
+## 블로그
 
-<!-- CATEGORY_ETC_START -->
+<!-- CATEGORY_UNCATEGORIZED_START -->
 
 | 날짜 | 제목 | 요약 | 태그 |
 | --- | --- | --- | --- |
 | 2026-06-01 | [나만의 블로그 구축하기](content/post/%EB%82%98%EB%A7%8C%EC%9D%98%20%EB%B8%94%EB%A1%9C%EA%B7%B8%20%EA%B5%AC%EC%B6%95%ED%95%98%EA%B8%B0.md) | Obsidian → GitHub → Astro Blog까지 연결된 기록 시스템 | blog |
 
-<!-- CATEGORY_ETC_END -->
+<!-- CATEGORY_UNCATEGORIZED_END -->
