@@ -118,8 +118,16 @@ function wikiDefinitions(entry: (typeof wikiEntries)[number]) {
 <Layout title="gjsk132 blog" description="gjsk132's blog">
 	<script is:inline>
 		const routeFilterParams = new URLSearchParams(window.location.search);
-		if (routeFilterParams.has("category") || routeFilterParams.has("tag")) {
+		if (routeFilterParams.has("category")) {
+			document.documentElement.dataset.listState = "category";
 			document.documentElement.dataset.routeFilterPending = "true";
+		} else if (routeFilterParams.has("tag")) {
+			document.documentElement.dataset.listState = "tag";
+			document.documentElement.dataset.routeFilterPending = "true";
+		} else if (routeFilterParams.has("search")) {
+			document.documentElement.dataset.listState = "search";
+		} else {
+			document.documentElement.dataset.listState = "home";
 		}
 	</script>
 	<BlogLayout
@@ -374,10 +382,13 @@ function wikiDefinitions(entry: (typeof wikiEntries)[number]) {
 	const selectedCategory = new URLSearchParams(window.location.search).get(
 		"category",
 	);
-	const selectedTag = new URLSearchParams(window.location.search).get("tag");
-	const shouldOpenSearch = new URLSearchParams(window.location.search).has(
-		"search",
-	);
+	const selectedTag = selectedCategory
+		? null
+		: new URLSearchParams(window.location.search).get("tag");
+	const shouldOpenSearch =
+		!selectedCategory &&
+		!selectedTag &&
+		new URLSearchParams(window.location.search).has("search");
 	const filterTitle = document.querySelector<HTMLElement>(
 		"[data-filter-title]",
 	);
@@ -812,9 +823,26 @@ function wikiDefinitions(entry: (typeof wikiEntries)[number]) {
 		searchInput?.focus();
 	}
 
+	function closeSearchPanel() {
+		if (searchPanel) {
+			searchPanel.hidden = true;
+			searchPanel.dataset.searchActive = "false";
+		}
+
+		searchQuery = "";
+		if (searchInput) {
+			searchInput.value = "";
+		}
+		applySearchResults();
+	}
+
 	window.addEventListener("site-search-open", (event) => {
 		event.preventDefault();
 		openSearchPanel();
+	});
+
+	window.addEventListener("site-search-close", () => {
+		closeSearchPanel();
 	});
 
 	searchInput?.addEventListener("input", () => {

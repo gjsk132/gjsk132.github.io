@@ -15,6 +15,7 @@ const {
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width" />
+		<meta name="color-scheme" content="only light" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="description" content={description} />
 		<meta name="generator" content={Astro.generator} />
@@ -33,7 +34,7 @@ const {
 
 <style is:global>
 	:root {
-		color-scheme: light;
+		color-scheme: only light;
 		--bg: #f2f2f7;
 		--panel: rgba(255, 255, 255, 0.72);
 		--panel-strong: #fff;
@@ -56,7 +57,7 @@ const {
 	}
 
 	html {
-		color-scheme: light;
+		color-scheme: only light;
 		scrollbar-gutter: auto;
 		scrollbar-width: none;
 	}
