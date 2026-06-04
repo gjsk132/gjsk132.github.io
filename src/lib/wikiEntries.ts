@@ -4,6 +4,7 @@ export interface WikiEntryFrontmatter {
 	defines?: WikiDefinitionInput[];
 	description?: string;
 	property?: string;
+	tags?: string[] | string;
 	draft?: boolean;
 }
 
@@ -20,6 +21,7 @@ export interface WikiEntry {
 	frontmatter: WikiEntryFrontmatter;
 	definition: string;
 	definitions: WikiDefinition[];
+	tags: string[];
 	body: string;
 	Content: unknown;
 }
@@ -55,6 +57,16 @@ function parseScalar(value: string) {
 	return value.replace(/^['"]|['"]$/g, '').trim();
 }
 
+function parseInlineList(value: string) {
+	const bracketMatch = value.match(/^\[(.*)\]$/);
+	if (!bracketMatch) return [];
+
+	return bracketMatch[1]
+		.split(',')
+		.map((item) => parseScalar(item))
+		.filter(Boolean);
+}
+
 function parseFrontmatter(rawEntry: string): WikiEntryFrontmatter {
 	const match = rawEntry.match(/^---\r?\n([\s\S]*?)\r?\n---/);
 	if (!match) return {};
@@ -88,6 +100,18 @@ function parseFrontmatter(rawEntry: string): WikiEntryFrontmatter {
 			continue;
 		}
 
+		if (key === 'tags') {
+			const items = parseInlineList(value);
+
+			while (lines[index + 1]?.match(/^\s*-\s+/)) {
+				index += 1;
+				items.push(parseScalar(lines[index].replace(/^\s*-\s+/, '')));
+			}
+
+			frontmatter.tags = items.length > 0 ? items : value ? [value] : [];
+			continue;
+		}
+
 		if (key === 'draft') {
 			frontmatter.draft = value.toLowerCase() === 'true';
 			continue;
@@ -99,6 +123,13 @@ function parseFrontmatter(rawEntry: string): WikiEntryFrontmatter {
 	}
 
 	return frontmatter;
+}
+
+function normalizeTags(tags: WikiEntryFrontmatter['tags']) {
+	if (!tags) return [];
+	const items = Array.isArray(tags) ? tags : [tags];
+
+	return [...new Set(items.map((tag) => String(tag).trim()).filter(Boolean))];
 }
 
 function plainBody(body: string) {
@@ -149,6 +180,7 @@ export async function getAllWikiEntries() {
 			const body = stripFrontmatter(rawEntry);
 			const definitions = normalizeDefinitions(frontmatter.defines);
 			const definition = definitions[0]?.define ?? frontmatter.define ?? frontmatter.description ?? plainBody(body);
+			const tags = normalizeTags(frontmatter.tags);
 
 			return {
 				slug,
@@ -156,6 +188,7 @@ export async function getAllWikiEntries() {
 				frontmatter,
 				definition,
 				definitions,
+				tags,
 				body,
 				Content: mod.Content,
 			};
@@ -171,7 +204,7 @@ export function findWikiEntryByReference(entries: WikiEntry[], reference: string
 	const normalizedReference = reference.toLowerCase();
 
 	return entries.find((entry) => {
-		const candidates = [entry.slug, entry.title, entry.slug.split('/').at(-1) ?? ''];
+		const candidates = [entry.slug, entry.title, entry.slug.split('/').at(-1) ?? '', ...entry.tags];
 		return candidates.some((candidate) => candidate.toLowerCase() === normalizedReference);
 	});
 }

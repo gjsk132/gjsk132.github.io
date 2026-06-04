@@ -33,6 +33,15 @@ const wikiTermEntries = entries.filter((item) => item.slug !== entry.slug);
 	>
 		<article class="post-card wiki-detail-card">
 			<h1>{entry.title}</h1>
+			{
+				entry.tags.length > 0 && (
+					<div class="wiki-aliases" aria-label="같은 대상을 가리키는 다른 표기">
+						{entry.tags.map((tag) => (
+							<span>{tag}</span>
+						))}
+					</div>
+				)
+			}
 			{entry.definitions.length === 0 && entry.definition && <p class="post-description">{entry.definition}</p>}
 			{
 				entry.definitions.length > 0 && (
@@ -188,6 +197,25 @@ const wikiTermEntries = entries.filter((item) => item.slug !== entry.slug);
 		color: var(--muted);
 		font-size: 14px;
 		line-height: 1.7;
+	}
+
+	.wiki-aliases {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 7px;
+		margin: 12px 0 18px;
+	}
+
+	.wiki-aliases span {
+		max-width: 100%;
+		padding: 5px 9px;
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--accent) 10%, transparent);
+		color: var(--accent);
+		font-size: 12px;
+		font-weight: 700;
+		line-height: 1.35;
+		overflow-wrap: anywhere;
 	}
 
 	.wiki-definitions {

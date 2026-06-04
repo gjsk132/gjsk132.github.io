@@ -3,6 +3,7 @@ interface WikiTerm {
 	slug: string;
 	title: string;
 	definition: string;
+	tags?: string[];
 	definitions?: {
 		title: string;
 		define: string;
@@ -20,10 +21,10 @@ const terms = Astro.props.entries
 		slug: entry.slug,
 		title: entry.title.trim(),
 		definition: entry.definition.trim(),
+		tags: [...new Set((entry.tags ?? []).map((tag) => tag.trim()).filter(Boolean))],
 		definitions: entry.definitions ?? [],
 	}))
-	.filter((entry) => entry.title && entry.definition)
-	.sort((a, b) => b.title.length - a.title.length);
+	.filter((entry) => entry.title && entry.definition);
 ---
 
 <template data-wiki-terms data-target-selector={targetSelector}>{JSON.stringify(terms)}</template>
@@ -58,25 +59,49 @@ const terms = Astro.props.entries
 
 			if (!terms.length) return;
 
-			const termsByTitle = new Map(
-				terms.map((term) => [term.title.toLowerCase(), term]),
-			);
+			function normalizeTermKey(value) {
+				return value.trim().toLocaleLowerCase();
+			}
+
+			function termCandidates(term) {
+				return [term.title, ...(Array.isArray(term.tags) ? term.tags : [])]
+					.map((candidate) => candidate.trim())
+					.filter(Boolean);
+			}
+
+			const rawCandidates = terms
+				.flatMap((term) =>
+					termCandidates(term).map((candidate) => ({
+						value: candidate,
+						term,
+					})),
+				)
+				.sort((a, b) => b.value.length - a.value.length);
+			const termsByCandidate = new Map();
+			const candidates = [];
+			for (const candidate of rawCandidates) {
+				const key = normalizeTermKey(candidate.value);
+				if (!termsByCandidate.has(key)) {
+					termsByCandidate.set(key, candidate.term);
+					candidates.push(candidate);
+				}
+			}
 			const highlightedSlugs = new Set();
 
 			function escapeRegExp(value) {
 				return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 			}
 
-			function termPattern(term) {
-				const escapedTerm = escapeRegExp(term.title);
-				const isAsciiWord = /^[A-Za-z0-9 _-]+$/.test(term.title);
+			function termPattern(candidate) {
+				const escapedTerm = escapeRegExp(candidate.value);
+				const isAsciiWord = /^[A-Za-z0-9 _-]+$/.test(candidate.value);
 
 				if (!isAsciiWord) return escapedTerm;
 
-				return `(?<![A-Za-z0-9])${escapedTerm}(?![A-Za-z0-9])`;
+				return `(?<![A-Za-z0-9_-])${escapedTerm}(?![A-Za-z0-9_-])`;
 			}
 
-			const pattern = terms.map(termPattern).filter(Boolean).join("|");
+			const pattern = candidates.map(termPattern).filter(Boolean).join("|");
 
 			if (!pattern) return;
 
@@ -119,7 +144,7 @@ const terms = Astro.props.entries
 
 					matcher.lastIndex = 0;
 					text.replace(matcher, (match, offset) => {
-						const term = termsByTitle.get(match.toLowerCase());
+						const term = termsByCandidate.get(normalizeTermKey(match));
 
 						if (!term || highlightedSlugs.has(term.slug)) return match;
 
