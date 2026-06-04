@@ -10,16 +10,22 @@ const categoryCounts = getPostCategoryCounts(posts);
 const postTags = getPostTags(posts);
 const entries = await getAllWikiEntries();
 
-function entryTags(entry: (typeof entries)[number]) {
-	return entry.frontmatter.tags ?? [];
-}
-
 function entryAnchor(entry: (typeof entries)[number]) {
 	return `entry-${entry.slug.replace(/[^A-Za-z0-9_-]+/g, '-')}`;
 }
 
 function entryHref(entry: (typeof entries)[number]) {
 	return `/wiki/${entry.slug}/`;
+}
+
+function definitionSearchText(entry: (typeof entries)[number]) {
+	return [entry.definition, ...entry.definitions.flatMap((definition) => [definition.title, definition.define])]
+		.join(' ')
+		.toLowerCase();
+}
+
+function definitionCount(entry: (typeof entries)[number]) {
+	return entry.definitions.length || (entry.definition ? 1 : 0);
 }
 ---
 
@@ -48,22 +54,32 @@ function entryHref(entry: (typeof entries)[number]) {
 						{entries.map((entry) => (
 							<li
 								class="wiki-card"
-								data-wiki-item
-								data-title={entry.title.toLowerCase()}
-								data-definition={entry.definition.toLowerCase()}
-								data-tags={entryTags(entry).join('|')}
-							>
+										data-wiki-item
+										data-title={entry.title.toLowerCase()}
+										data-definition={definitionSearchText(entry)}
+									>
 								<a
 									href={entryHref(entry)}
 									id={entryAnchor(entry)}
 								>
 									<span class="wiki-card-title">{entry.title}</span>
-									<span class="wiki-card-definition">{entry.definition}</span>
-									{entryTags(entry).length > 0 && (
-										<span class="wiki-card-tags">
-											{entryTags(entry).map((tag) => <em>{tag}</em>)}
-										</span>
-									)}
+									<span class="wiki-card-count">
+										{definitionCount(entry)}
+									</span>
+									{
+										entry.definitions.length > 0 ? (
+											<span class="wiki-card-definitions">
+												{entry.definitions.map((definition) => (
+													<span>
+														<strong>{definition.title}</strong>
+														<em>{definition.define}</em>
+													</span>
+												))}
+											</span>
+										) : (
+											<span class="wiki-card-definition">{entry.definition}</span>
+										)
+									}
 								</a>
 							</li>
 						))}
@@ -95,12 +111,10 @@ function entryHref(entry: (typeof entries)[number]) {
 		let visibleCount = 0;
 
 		for (const item of items) {
-			const tags = item.dataset.tags?.split('|').filter(Boolean) ?? [];
 			const matchesQuery =
 				!query ||
 				(item.dataset.title ?? '').includes(query) ||
-				(item.dataset.definition ?? '').includes(query) ||
-				tags.some((tag) => tag.toLowerCase().includes(query));
+				(item.dataset.definition ?? '').includes(query);
 
 			item.hidden = !matchesQuery;
 			if (matchesQuery) visibleCount += 1;
@@ -193,9 +207,8 @@ function entryHref(entry: (typeof entries)[number]) {
 	}
 
 	.wiki-list {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-		gap: 22px;
+		column-count: 2;
+		column-gap: 22px;
 		margin: 22px 0 0;
 		padding: 0;
 		list-style: none;
@@ -203,6 +216,11 @@ function entryHref(entry: (typeof entries)[number]) {
 
 	.wiki-card[hidden] {
 		display: none;
+	}
+
+	.wiki-card {
+		break-inside: avoid;
+		margin: 0 0 22px;
 	}
 
 	.wiki-card a {
@@ -248,6 +266,10 @@ function entryHref(entry: (typeof entries)[number]) {
 		background: color-mix(in srgb, var(--accent) 72%, white);
 	}
 
+	.wiki-card-count {
+		display: none;
+	}
+
 	.wiki-card-definition {
 		display: -webkit-box;
 		color: var(--muted);
@@ -258,22 +280,58 @@ function entryHref(entry: (typeof entries)[number]) {
 		overflow: hidden;
 	}
 
+	.wiki-card-definitions {
+		display: grid;
+		gap: 8px;
+	}
+
+	.wiki-card-definitions > span {
+		display: grid;
+		gap: 3px;
+		padding-left: 10px;
+		border-left: 2px solid color-mix(in srgb, var(--accent) 18%, white);
+	}
+
+	.wiki-card-definitions strong {
+		color: var(--text);
+		font-size: 12px;
+		line-height: 1.35;
+		overflow-wrap: anywhere;
+	}
+
+	.wiki-card-definitions em {
+		display: -webkit-box;
+		color: var(--muted);
+		font-size: 12px;
+		font-style: normal;
+		line-height: 1.55;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
 	.wiki-list[data-view='timeline'] {
 		display: flex;
-		flex-direction: column;
+		flex-wrap: wrap;
 		align-items: flex-start;
-		gap: 8px;
-		max-width: 520px;
+		column-gap: 18px;
+		row-gap: 12px;
+		max-width: none;
+		column-count: initial;
+	}
+
+	.wiki-list[data-view='timeline'] .wiki-card {
+		margin: 0;
 	}
 
 	.wiki-list[data-view='timeline'] .wiki-card a {
 		display: flex;
 		align-items: center;
-		gap: 9px;
+		gap: 10px;
 		width: fit-content;
 		max-width: 100%;
 		min-height: 42px;
-		padding: 11px 18px;
+		padding: 11px 19px;
 		border-radius: 999px;
 		background: #fff;
 		box-shadow: none;
@@ -318,27 +376,15 @@ function entryHref(entry: (typeof entries)[number]) {
 	}
 
 	.wiki-list[data-view='timeline'] .wiki-card-definition,
-	.wiki-list[data-view='timeline'] .wiki-card-tags {
+	.wiki-list[data-view='timeline'] .wiki-card-definitions {
 		display: none;
 	}
 
-	.wiki-card-tags {
-		display: flex;
-		flex-wrap: wrap;
-		align-self: end;
-		gap: 5px;
-	}
-
-	.wiki-card-tags em {
-		max-width: 100%;
-		padding: 3px 7px;
-		border-radius: 999px;
-		background: color-mix(in srgb, var(--accent) 10%, transparent);
-		color: var(--accent);
-		font-size: 11px;
-		font-style: normal;
-		font-weight: 700;
-		overflow-wrap: anywhere;
+	.wiki-list[data-view='timeline'] .wiki-card-count {
+		display: inline;
+		color: var(--muted);
+		font-size: 12px;
+		font-weight: 600;
 	}
 
 	.empty-wiki {
@@ -363,7 +409,7 @@ function entryHref(entry: (typeof entries)[number]) {
 		}
 
 		.wiki-list {
-			grid-template-columns: 1fr;
+			column-count: 1;
 		}
 
 	}

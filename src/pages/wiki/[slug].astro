@@ -2,7 +2,7 @@
 import BlogLayout from '../../components/BlogLayout.astro';
 import WikiTermHighlighter from '../../components/WikiTermHighlighter.astro';
 import Layout from '../../layouts/Layout.astro';
-import { findWikiEntryByReference, getAllWikiEntries } from '../../lib/wikiEntries';
+import { getAllWikiEntries } from '../../lib/wikiEntries';
 import { getAllPosts, getPostCategories, getPostCategoryCounts, getPostTags } from '../../lib/posts';
 
 export async function getStaticPaths() {
@@ -21,11 +21,7 @@ const categories = getPostCategories(posts);
 const categoryCounts = getPostCategoryCounts(posts);
 const tags = getPostTags(posts);
 const entries = await getAllWikiEntries();
-const entryTags = entry.frontmatter.tags ?? [];
 const wikiTermEntries = entries.filter((item) => item.slug !== entry.slug);
-const relatedEntries = entryTags
-	.map((reference) => findWikiEntryByReference(entries, reference))
-	.filter((relatedEntry) => relatedEntry && relatedEntry.slug !== entry.slug);
 ---
 
 <Layout title={`${entry.title} | Wiki`} description={entry.definition}>
@@ -34,22 +30,23 @@ const relatedEntries = entryTags
 		categoryCounts={categoryCounts}
 		tags={tags}
 		postCount={posts.length}
-		activeTags={entryTags}
 	>
 		<article class="post-card wiki-detail-card">
 			<h1>{entry.title}</h1>
-			{entry.definition && <p class="post-description">{entry.definition}</p>}
-			<div class="meta">
-				<span>Wiki</span>
-				{
-					entryTags.length > 0 && (
-						<div class="post-tags">
-							{entryTags.map((tag) => <em>{tag}</em>)}
-						</div>
-					)
-				}
-			</div>
-
+			{entry.definitions.length === 0 && entry.definition && <p class="post-description">{entry.definition}</p>}
+			{
+				entry.definitions.length > 0 && (
+					<div class="wiki-definitions">
+						{entry.definitions.map((definition, index) => (
+							<section>
+								<span>[{index + 1}]</span>
+								<strong>{definition.title}</strong>
+								<p>{definition.define}</p>
+							</section>
+						))}
+					</div>
+				)
+			}
 			<hr class="content-divider" />
 
 			<div class="article-content">
@@ -58,22 +55,6 @@ const relatedEntries = entryTags
 			<WikiTermHighlighter entries={wikiTermEntries} />
 		</article>
 
-		{
-			relatedEntries.length > 0 && (
-				<nav class="post-neighbors wiki-related" aria-label="관련 Wiki">
-					{relatedEntries.map((relatedEntry) => (
-						<a href={`/wiki/${relatedEntry.slug}/`} data-astro-prefetch>
-							<span>Related Wiki</span>
-							<strong>{relatedEntry.title}</strong>
-							<p>{relatedEntry.definition}</p>
-							<div class="neighbor-meta">
-								{relatedEntry.frontmatter.tags?.map((tag) => <em>{tag}</em>)}
-							</div>
-						</a>
-					))}
-				</nav>
-			)
-		}
 	</BlogLayout>
 </Layout>
 
@@ -209,6 +190,42 @@ const relatedEntries = entryTags
 		line-height: 1.7;
 	}
 
+	.wiki-definitions {
+		display: grid;
+		gap: 11px;
+		margin: 18px 0 22px;
+	}
+
+	.wiki-definitions section {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		column-gap: 8px;
+		row-gap: 4px;
+		padding-left: 12px;
+		border-left: 2px solid color-mix(in srgb, var(--accent) 68%, white);
+	}
+
+	.wiki-definitions span {
+		color: var(--accent);
+		font-size: 12px;
+		font-weight: 800;
+		line-height: 1.35;
+	}
+
+	.wiki-definitions strong {
+		color: var(--text);
+		font-size: 13px;
+		line-height: 1.35;
+	}
+
+	.wiki-definitions p {
+		grid-column: 2;
+		margin: 0;
+		color: var(--muted);
+		font-size: 13px;
+		line-height: 1.65;
+	}
+
 	.meta {
 		display: flex;
 		align-items: center;
@@ -226,25 +243,6 @@ const relatedEntries = entryTags
 		border-radius: 999px;
 		background: color-mix(in srgb, var(--accent) 10%, transparent);
 		color: var(--accent);
-		font-weight: 700;
-		overflow-wrap: anywhere;
-	}
-
-	.post-tags {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
-		min-width: 0;
-	}
-
-	.post-tags em {
-		max-width: 100%;
-		padding: 4px 8px;
-		border-radius: 999px;
-		background: color-mix(in srgb, var(--accent) 10%, transparent);
-		color: var(--accent);
-		font-size: 11px;
-		font-style: normal;
 		font-weight: 700;
 		overflow-wrap: anywhere;
 	}
