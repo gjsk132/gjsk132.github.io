@@ -16,6 +16,7 @@ const {
 	activeTags = [],
 } = Astro.props;
 const selectedTag = Astro.url.searchParams.get('tag');
+const isHomeRoute = Astro.url.pathname === '/';
 const isWikiRoute = Astro.url.pathname === '/wiki/' || Astro.url.pathname.startsWith('/wiki/');
 
 function categoryHref(category: string) {
@@ -36,7 +37,14 @@ function isActiveTag(tag: string) {
 ---
 
 <div class="blog-layout">
-	<a class="blog-home-button" href="/" aria-label="홈으로 이동" title="Home" data-home-button>
+	<a
+		class="blog-home-button"
+		href="/"
+		aria-label="홈으로 이동"
+		title="Home"
+		aria-current={isHomeRoute ? 'page' : undefined}
+		data-home-button
+	>
 		<svg aria-hidden="true" viewBox="0 0 24 24">
 			<path d="M12 4.2 5.1 9.7c-.5.4-.8 1-.8 1.7v5.7c0 1 .8 1.8 1.8 1.8h3.2v-4.3c0-.8.6-1.4 1.4-1.4h2.6c.8 0 1.4.6 1.4 1.4v4.3h3.2c1 0 1.8-.8 1.8-1.8v-5.7c0-.7-.3-1.3-.8-1.7L12 4.2Z" />
 		</svg>
@@ -64,7 +72,7 @@ function isActiveTag(tag: string) {
 	</div>
 
 	<nav class="mobile-topbar" aria-label="Mobile navigation" data-mobile-topbar>
-		<a class="mobile-icon-button" href="/" aria-label="홈으로 이동" title="Home">
+		<a class="mobile-icon-button" href="/" aria-label="홈으로 이동" title="Home" aria-current={isHomeRoute ? 'page' : undefined}>
 			<svg aria-hidden="true" viewBox="0 0 24 24">
 				<path d="M12 4.2 5.1 9.7c-.5.4-.8 1-.8 1.7v5.7c0 1 .8 1.8 1.8 1.8h3.2v-4.3c0-.8.6-1.4 1.4-1.4h2.6c.8 0 1.4.6 1.4 1.4v4.3h3.2c1 0 1.8-.8 1.8-1.8v-5.7c0-.7-.3-1.3-.8-1.7L12 4.2Z" />
 			</svg>
@@ -414,12 +422,18 @@ function isActiveTag(tag: string) {
 	}
 
 	.blog-home-button:hover,
-	.blog-home-button:focus-visible {
+	.blog-home-button:focus-visible,
+	.blog-home-button[aria-current='page'] {
 		border-color: color-mix(in srgb, var(--accent) 32%, white);
+		background: color-mix(in srgb, var(--accent) 10%, white);
 		color: var(--accent);
 		box-shadow: 0 12px 26px rgba(45, 84, 255, 0.12);
-		transform: translateY(-1px);
 		outline: 0;
+	}
+
+	.blog-home-button:hover,
+	.blog-home-button:focus-visible {
+		transform: translateY(-1px);
 	}
 
 	.blog-home-button svg {
