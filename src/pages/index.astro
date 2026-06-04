@@ -9,10 +9,10 @@ import {
 	getPostDate,
 	getPostTags,
 } from '../lib/posts';
-import { getAllIndexEntries } from '../lib/indexEntries';
+import { getAllWikiEntries } from '../lib/wikiEntries';
 
 const posts = await getAllPosts();
-const indexEntries = await getAllIndexEntries();
+const wikiEntries = await getAllWikiEntries();
 const categories = getPostCategories(posts);
 const categoryCounts = getPostCategoryCounts(posts);
 const tags = getPostTags(posts);
@@ -63,8 +63,8 @@ function plainPostBody(post: (typeof posts)[number]) {
 		.trim();
 }
 
-function plainIndexBody(indexEntry: (typeof indexEntries)[number]) {
-	return indexEntry.body
+function plainWikiBody(wikiEntry: (typeof wikiEntries)[number]) {
+	return wikiEntry.body
 		.replace(/```[\s\S]*?```/g, ' ')
 		.replace(/!\[\[[^\]]+\]\]/g, ' ')
 		.replace(/!\[[^\]]*\]\([^)]+\)/g, ' ')
@@ -78,11 +78,11 @@ function searchPreview(post: (typeof posts)[number]) {
 	return plainPostBody(post) || post.excerpt;
 }
 
-function indexEntryTags(entry: (typeof indexEntries)[number]) {
+function wikiEntryTags(entry: (typeof wikiEntries)[number]) {
 	return entry.frontmatter.tags ?? [];
 }
 
-function indexEntryReferenceKeys(entry: (typeof indexEntries)[number]) {
+function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 	return [
 		entry.title,
 		entry.slug,
@@ -137,26 +137,26 @@ function indexEntryReferenceKeys(entry: (typeof indexEntries)[number]) {
 						))
 					}
 					{
-						indexEntries.map((indexEntry) => (
+						wikiEntries.map((wikiEntry) => (
 							<a
-								href={`/index/${indexEntry.slug}/`}
+								href={`/wiki/${wikiEntry.slug}/`}
 								data-search-result
-								data-search-title={indexEntry.title.toLowerCase()}
-								data-search-summary={indexEntry.definition.toLowerCase()}
+								data-search-title={wikiEntry.title.toLowerCase()}
+								data-search-summary={wikiEntry.definition.toLowerCase()}
 								data-search-tags=""
-								data-search-body={plainIndexBody(indexEntry).toLowerCase()}
-								data-result-title={indexEntry.title}
-								data-result-summary={indexEntry.definition}
+								data-search-body={plainWikiBody(wikiEntry).toLowerCase()}
+								data-result-title={wikiEntry.title}
+								data-result-summary={wikiEntry.definition}
 								data-result-tags=""
-								data-result-body={plainIndexBody(indexEntry)}
-								data-result-fallback={indexEntry.definition || plainIndexBody(indexEntry)}
+								data-result-body={plainWikiBody(wikiEntry)}
+								data-result-fallback={wikiEntry.definition || plainWikiBody(wikiEntry)}
 								hidden
 							>
-								<strong data-result-title-text>{indexEntry.title}</strong>
-								<p data-result-preview-text>{indexEntry.definition}</p>
+								<strong data-result-title-text>{wikiEntry.title}</strong>
+								<p data-result-preview-text>{wikiEntry.definition}</p>
 								<div class="search-result-meta">
-									<span>Index</span>
-									{indexEntryTags(indexEntry).map((tag) => <span>#{tag}</span>)}
+									<span>Wiki</span>
+									{wikiEntryTags(wikiEntry).map((tag) => <span>#{tag}</span>)}
 								</div>
 							</a>
 						))
@@ -178,18 +178,18 @@ function indexEntryReferenceKeys(entry: (typeof indexEntries)[number]) {
 			</h1>
 
 			{
-				indexEntries.map((indexEntry) => (
+				wikiEntries.map((wikiEntry) => (
 					<aside
-						class="tag-index-summary"
-						aria-label={`${indexEntry.title} Index 설명`}
-						data-tag-index-summary
-						data-index-reference-keys={indexEntryReferenceKeys(indexEntry)}
+						class="tag-wiki-summary"
+						aria-label={`${wikiEntry.title} Wiki 설명`}
+						data-tag-wiki-summary
+						data-wiki-reference-keys={wikiEntryReferenceKeys(wikiEntry)}
 						hidden
 					>
 						<p>
-							{indexEntry.definition}
+							{wikiEntry.definition}
 						</p>
-						<a href={`/index/${indexEntry.slug}/`} aria-label={`${indexEntry.title} Index 보기`} title="Index 보기">
+						<a href={`/wiki/${wikiEntry.slug}/`} aria-label={`${wikiEntry.title} Wiki 보기`} title="Wiki 보기">
 							<svg aria-hidden="true" viewBox="0 0 24 24">
 								<path d="M7 5h6v2H7v10h10v-6h2v6.2c0 1-.8 1.8-1.8 1.8H6.8c-1 0-1.8-.8-1.8-1.8V6.8c0-1 .8-1.8 1.8-1.8H13Zm8 0h4v4h-2V8.4l-5.3 5.3-1.4-1.4L15.6 7H15V5Z" />
 							</svg>
@@ -268,7 +268,7 @@ function indexEntryReferenceKeys(entry: (typeof indexEntries)[number]) {
 	const searchInput = document.querySelector<HTMLInputElement>('[data-search-input]');
 	const searchResults = Array.from(document.querySelectorAll<HTMLElement>('[data-search-result]'));
 	const emptySearch = document.querySelector<HTMLElement>('[data-empty-search]');
-	const tagIndexSummaries = Array.from(document.querySelectorAll<HTMLElement>('[data-tag-index-summary]'));
+	const tagWikiSummaries = Array.from(document.querySelectorAll<HTMLElement>('[data-tag-wiki-summary]'));
 	const pageSizeButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-page-size-option]'));
 	const pagination = document.querySelector<HTMLElement>('[data-pagination]');
 	const pagePrev = document.querySelector<HTMLButtonElement>('[data-page-prev]');
@@ -467,12 +467,12 @@ function indexEntryReferenceKeys(entry: (typeof indexEntries)[number]) {
 		return `${prefix}${normalizedValue.slice(start, end)}${suffix}`;
 	}
 
-	function applyTagIndexSummary() {
+	function applyTagWikiSummary() {
 		const tag = selectedTag?.toLowerCase();
 		let hasVisibleSummary = false;
 
-		for (const summary of tagIndexSummaries) {
-			const referenceKeys = summary.dataset.indexReferenceKeys?.split('|').filter(Boolean) ?? [];
+		for (const summary of tagWikiSummaries) {
+			const referenceKeys = summary.dataset.wikiReferenceKeys?.split('|').filter(Boolean) ?? [];
 			const isVisible = Boolean(tag) && !hasVisibleSummary && referenceKeys.includes(tag ?? '');
 			summary.hidden = !isVisible;
 			if (isVisible) hasVisibleSummary = true;
@@ -611,7 +611,7 @@ function indexEntryReferenceKeys(entry: (typeof indexEntries)[number]) {
 	});
 
 	applySearchResults();
-	applyTagIndexSummary();
+	applyTagWikiSummary();
 	delete document.documentElement.dataset.routeFilterPending;
 
 	if (shouldOpenSearch) {
@@ -801,7 +801,7 @@ function indexEntryReferenceKeys(entry: (typeof indexEntries)[number]) {
 		font-size: 23px;
 	}
 
-	.tag-index-summary {
+	.tag-wiki-summary {
 		position: relative;
 		display: flex;
 		align-items: center;
@@ -813,11 +813,11 @@ function indexEntryReferenceKeys(entry: (typeof indexEntries)[number]) {
 		color: var(--text);
 	}
 
-	.tag-index-summary[hidden] {
+	.tag-wiki-summary[hidden] {
 		display: none;
 	}
 
-	.tag-index-summary::before {
+	.tag-wiki-summary::before {
 		content: '';
 		position: absolute;
 		top: 10px;
@@ -828,14 +828,14 @@ function indexEntryReferenceKeys(entry: (typeof indexEntries)[number]) {
 		background: color-mix(in srgb, var(--accent) 72%, white);
 	}
 
-	.tag-index-summary p {
+	.tag-wiki-summary p {
 		margin: 0;
 		color: rgba(0, 0, 0, 0.68);
 		font-size: 14px;
 		line-height: 1.7;
 	}
 
-	.tag-index-summary a {
+	.tag-wiki-summary a {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -855,14 +855,14 @@ function indexEntryReferenceKeys(entry: (typeof indexEntries)[number]) {
 			transform 160ms ease;
 	}
 
-	.tag-index-summary a svg {
+	.tag-wiki-summary a svg {
 		width: 17px;
 		height: 17px;
 		fill: currentColor;
 	}
 
-	.tag-index-summary a:hover,
-	.tag-index-summary a:focus-visible {
+	.tag-wiki-summary a:hover,
+	.tag-wiki-summary a:focus-visible {
 		background: color-mix(in srgb, var(--accent) 16%, white);
 		color: var(--accent);
 		box-shadow: 0 10px 22px rgba(45, 84, 255, 0.08);
@@ -1262,12 +1262,12 @@ function indexEntryReferenceKeys(entry: (typeof indexEntries)[number]) {
 			flex-direction: column;
 		}
 
-		.tag-index-summary {
+		.tag-wiki-summary {
 			align-items: flex-start;
 			padding-bottom: 18px;
 		}
 
-		.tag-index-summary a {
+		.tag-wiki-summary a {
 			margin-top: 2px;
 		}
 

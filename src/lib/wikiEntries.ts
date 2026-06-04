@@ -1,4 +1,4 @@
-export interface IndexEntryFrontmatter {
+export interface WikiEntryFrontmatter {
 	title?: string;
 	define?: string;
 	description?: string;
@@ -7,29 +7,29 @@ export interface IndexEntryFrontmatter {
 	draft?: boolean;
 }
 
-export interface IndexEntry {
+export interface WikiEntry {
 	slug: string;
 	title: string;
-	frontmatter: IndexEntryFrontmatter;
+	frontmatter: WikiEntryFrontmatter;
 	definition: string;
 	body: string;
 	Content: unknown;
 }
 
-interface IndexEntryModule {
-	frontmatter: IndexEntryFrontmatter;
+interface WikiEntryModule {
+	frontmatter: WikiEntryFrontmatter;
 	Content: unknown;
 }
 
-const indexModules = import.meta.glob<IndexEntryModule>('../../content/index/**/*.md');
-const rawIndexModules = import.meta.glob<string>('../../content/index/**/*.md', {
+const wikiModules = import.meta.glob<WikiEntryModule>('../../content/wiki/**/*.md');
+const rawWikiModules = import.meta.glob<string>('../../content/wiki/**/*.md', {
 	query: '?raw',
 	import: 'default',
 });
 
 function slugFromPath(path: string) {
 	return path
-		.replace('../../content/index/', '')
+		.replace('../../content/wiki/', '')
 		.replace(/\.md$/, '')
 		.replace(/\\/g, '/');
 }
@@ -47,11 +47,11 @@ function parseScalar(value: string) {
 	return value.replace(/^['"]|['"]$/g, '').trim();
 }
 
-function parseFrontmatter(rawEntry: string): IndexEntryFrontmatter {
+function parseFrontmatter(rawEntry: string): WikiEntryFrontmatter {
 	const match = rawEntry.match(/^---\r?\n([\s\S]*?)\r?\n---/);
 	if (!match) return {};
 
-	const frontmatter: IndexEntryFrontmatter = {};
+	const frontmatter: WikiEntryFrontmatter = {};
 	const lines = match[1].split(/\r?\n/);
 
 	for (let index = 0; index < lines.length; index += 1) {
@@ -87,7 +87,7 @@ function parseFrontmatter(rawEntry: string): IndexEntryFrontmatter {
 		}
 
 		if (['title', 'define', 'description', 'property'].includes(key)) {
-			frontmatter[key as keyof Omit<IndexEntryFrontmatter, 'tags' | 'draft'>] = value;
+			frontmatter[key as keyof Omit<WikiEntryFrontmatter, 'tags' | 'draft'>] = value;
 		}
 	}
 
@@ -105,11 +105,11 @@ function plainBody(body: string) {
 		.trim();
 }
 
-export async function getAllIndexEntries() {
+export async function getAllWikiEntries() {
 	const entries = await Promise.all(
-		Object.entries(indexModules).map(async ([path, loadEntry]) => {
+		Object.entries(wikiModules).map(async ([path, loadEntry]) => {
 			const mod = await loadEntry();
-			const rawEntry = rawIndexModules[path] ? await rawIndexModules[path]() : '';
+			const rawEntry = rawWikiModules[path] ? await rawWikiModules[path]() : '';
 			const slug = slugFromPath(path);
 			const frontmatter = { ...parseFrontmatter(rawEntry), ...(mod.frontmatter ?? {}) };
 			const body = stripFrontmatter(rawEntry);
@@ -131,12 +131,12 @@ export async function getAllIndexEntries() {
 		.sort((a, b) => a.title.localeCompare(b.title, 'ko-KR'));
 }
 
-export function getIndexTags(entries: IndexEntry[]) {
+export function getWikiTags(entries: WikiEntry[]) {
 	const tags = entries.flatMap((entry) => entry.frontmatter.tags ?? []);
 	return [...new Set(tags.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ko-KR'));
 }
 
-export function findIndexEntryByReference(entries: IndexEntry[], reference: string) {
+export function findWikiEntryByReference(entries: WikiEntry[], reference: string) {
 	const normalizedReference = reference.toLowerCase();
 
 	return entries.find((entry) => {

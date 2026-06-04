@@ -5,10 +5,10 @@ properties:
     displayName: define
 views:
   - type: table
-    name: index
+    name: wiki
     filters:
       and:
-        - file.inFolder("index")
+        - file.inFolder("wiki")
     order:
       - file.name
       - define

@@ -1,14 +1,14 @@
 ---
 import BlogLayout from '../../components/BlogLayout.astro';
 import Layout from '../../layouts/Layout.astro';
-import { getAllIndexEntries } from '../../lib/indexEntries';
+import { getAllWikiEntries } from '../../lib/wikiEntries';
 import { getAllPosts, getPostCategories, getPostCategoryCounts, getPostTags } from '../../lib/posts';
 
 const posts = await getAllPosts();
 const categories = getPostCategories(posts);
 const categoryCounts = getPostCategoryCounts(posts);
 const postTags = getPostTags(posts);
-const entries = await getAllIndexEntries();
+const entries = await getAllWikiEntries();
 
 function entryTags(entry: (typeof entries)[number]) {
 	return entry.frontmatter.tags ?? [];
@@ -19,36 +19,36 @@ function entryAnchor(entry: (typeof entries)[number]) {
 }
 
 function entryHref(entry: (typeof entries)[number]) {
-	return `/index/${entry.slug}/`;
+	return `/wiki/${entry.slug}/`;
 }
 ---
 
-<Layout title="Index | gjsk132 blog" description="Obsidian 개념 노트를 사전처럼 모아 보는 페이지">
+<Layout title="Wiki | gjsk132 blog" description="Obsidian wiki 노트를 모아 보는 페이지">
 	<BlogLayout categories={categories} categoryCounts={categoryCounts} tags={postTags} postCount={posts.length}>
-		<section class="index-frame">
-			<header class="index-header">
+		<section class="wiki-frame">
+			<header class="wiki-header">
 				<div>
 					<h1>
-						<span>Index</span>
+						<span>Wiki</span>
 						<strong>{entries.length}</strong>
 					</h1>
 				</div>
 			</header>
 
-			<label class="index-search">
+			<label class="wiki-search">
 				<svg aria-hidden="true" viewBox="0 0 24 24">
 					<path d="M10.8 4.5a6.3 6.3 0 0 1 5 10.1l3.8 3.8a1 1 0 0 1-1.4 1.4l-3.8-3.8a6.3 6.3 0 1 1-3.6-11.5Zm0 2a4.3 4.3 0 1 0 0 8.6 4.3 4.3 0 0 0 0-8.6Z" />
 				</svg>
-				<input type="search" placeholder="개념 검색" data-index-search />
+				<input type="search" placeholder="Wiki 검색" data-wiki-search />
 			</label>
 
 			{
 				entries.length > 0 ? (
-					<ul class="index-list" data-index-list data-view="posts">
+					<ul class="wiki-list" data-wiki-list data-view="posts">
 						{entries.map((entry) => (
 							<li
-								class="index-card"
-								data-index-item
+								class="wiki-card"
+								data-wiki-item
 								data-title={entry.title.toLowerCase()}
 								data-definition={entry.definition.toLowerCase()}
 								data-tags={entryTags(entry).join('|')}
@@ -57,10 +57,10 @@ function entryHref(entry: (typeof entries)[number]) {
 									href={entryHref(entry)}
 									id={entryAnchor(entry)}
 								>
-									<span class="index-card-title">{entry.title}</span>
-									<span class="index-card-definition">{entry.definition}</span>
+									<span class="wiki-card-title">{entry.title}</span>
+									<span class="wiki-card-definition">{entry.definition}</span>
 									{entryTags(entry).length > 0 && (
-										<span class="index-card-tags">
+										<span class="wiki-card-tags">
 											{entryTags(entry).map((tag) => <em>{tag}</em>)}
 										</span>
 									)}
@@ -69,28 +69,28 @@ function entryHref(entry: (typeof entries)[number]) {
 						))}
 					</ul>
 				) : (
-					<p class="empty-index">content/index 폴더에 Markdown 파일을 추가하면 개념 사전에 표시됩니다.</p>
+					<p class="empty-wiki">content/wiki 폴더에 Markdown 파일을 추가하면 Wiki에 표시됩니다.</p>
 				)
 			}
-			<p class="empty-index" data-empty-index hidden>검색 조건과 맞는 개념이 없습니다.</p>
+			<p class="empty-wiki" data-empty-wiki hidden>검색 조건과 맞는 Wiki 항목이 없습니다.</p>
 		</section>
 	</BlogLayout>
 </Layout>
 
 <script>
-	const searchInput = document.querySelector<HTMLInputElement>('[data-index-search]');
-	const items = Array.from(document.querySelectorAll<HTMLElement>('[data-index-item]'));
-	const emptyIndex = document.querySelector<HTMLElement>('[data-empty-index]');
-	const indexList = document.querySelector<HTMLElement>('[data-index-list]');
+	const searchInput = document.querySelector<HTMLInputElement>('[data-wiki-search]');
+	const items = Array.from(document.querySelectorAll<HTMLElement>('[data-wiki-item]'));
+	const emptyWiki = document.querySelector<HTMLElement>('[data-empty-wiki]');
+	const wikiList = document.querySelector<HTMLElement>('[data-wiki-list]');
 
-	function setIndexViewMode(viewMode: string) {
+	function setWikiViewMode(viewMode: string) {
 		const nextViewMode = viewMode === 'timeline' ? 'timeline' : 'posts';
-		if (indexList) {
-			indexList.dataset.view = nextViewMode;
+		if (wikiList) {
+			wikiList.dataset.view = nextViewMode;
 		}
 	}
 
-	function applyIndexFilters() {
+	function applyWikiFilters() {
 		const query = searchInput?.value.trim().toLowerCase() ?? '';
 		let visibleCount = 0;
 
@@ -106,21 +106,21 @@ function entryHref(entry: (typeof entries)[number]) {
 			if (matchesQuery) visibleCount += 1;
 		}
 
-		if (emptyIndex) {
-			emptyIndex.hidden = visibleCount > 0;
+		if (emptyWiki) {
+			emptyWiki.hidden = visibleCount > 0;
 		}
 	}
 
-	searchInput?.addEventListener('input', applyIndexFilters);
-	setIndexViewMode(window.localStorage.getItem('postViewMode') ?? 'posts');
+	searchInput?.addEventListener('input', applyWikiFilters);
+	setWikiViewMode(window.localStorage.getItem('postViewMode') ?? 'posts');
 
 	window.addEventListener('post-view-mode-change', (event) => {
-		setIndexViewMode(String((event as CustomEvent<string>).detail ?? 'posts'));
+		setWikiViewMode(String((event as CustomEvent<string>).detail ?? 'posts'));
 	});
 </script>
 
 <style>
-	.index-frame {
+	.wiki-frame {
 		padding: 28px 22px 40px;
 		border: 1px solid rgba(255, 255, 255, 0.58);
 		border-radius: 20px;
@@ -128,7 +128,7 @@ function entryHref(entry: (typeof entries)[number]) {
 		box-shadow: 0 20px 48px rgba(20, 24, 40, 0.08);
 	}
 
-	.index-header {
+	.wiki-header {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
@@ -138,7 +138,7 @@ function entryHref(entry: (typeof entries)[number]) {
 		margin: 0 0 20px;
 	}
 
-	.index-header h1 {
+	.wiki-header h1 {
 		display: flex;
 		align-items: baseline;
 		gap: 8px;
@@ -148,13 +148,13 @@ function entryHref(entry: (typeof entries)[number]) {
 		line-height: 1.25;
 	}
 
-	.index-header h1 strong {
+	.wiki-header h1 strong {
 		color: var(--accent);
 		font-size: 23px;
 		line-height: 1.2;
 	}
 
-	.index-search {
+	.wiki-search {
 		display: flex;
 		align-items: center;
 		gap: 10px;
@@ -170,19 +170,19 @@ function entryHref(entry: (typeof entries)[number]) {
 			box-shadow 160ms ease;
 	}
 
-	.index-search:focus-within {
+	.wiki-search:focus-within {
 		border-color: color-mix(in srgb, var(--accent) 32%, white);
 		box-shadow: 0 14px 32px rgba(45, 84, 255, 0.1);
 	}
 
-	.index-search svg {
+	.wiki-search svg {
 		width: 16px;
 		height: 16px;
 		flex: 0 0 auto;
 		fill: var(--muted);
 	}
 
-	.index-search input {
+	.wiki-search input {
 		width: 100%;
 		min-width: 0;
 		border: 0;
@@ -192,7 +192,7 @@ function entryHref(entry: (typeof entries)[number]) {
 		outline: 0;
 	}
 
-	.index-list {
+	.wiki-list {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
 		gap: 22px;
@@ -201,11 +201,11 @@ function entryHref(entry: (typeof entries)[number]) {
 		list-style: none;
 	}
 
-	.index-card[hidden] {
+	.wiki-card[hidden] {
 		display: none;
 	}
 
-	.index-card a {
+	.wiki-card a {
 		position: relative;
 		display: grid;
 		gap: 10px;
@@ -223,22 +223,22 @@ function entryHref(entry: (typeof entries)[number]) {
 			transform 160ms ease;
 	}
 
-	.index-card a:hover,
-	.index-card a:focus-visible {
+	.wiki-card a:hover,
+	.wiki-card a:focus-visible {
 		border-color: color-mix(in srgb, var(--accent) 24%, white);
 		box-shadow: 0 12px 30px rgba(45, 84, 255, 0.08);
 		transform: translateY(-1px);
 		outline: 0;
 	}
 
-	.index-card-title {
+	.wiki-card-title {
 		font-size: 16px;
 		font-weight: 700;
 		line-height: 1.35;
 		overflow-wrap: anywhere;
 	}
 
-	.index-card-title::after {
+	.wiki-card-title::after {
 		content: '';
 		display: block;
 		width: 30px;
@@ -248,7 +248,7 @@ function entryHref(entry: (typeof entries)[number]) {
 		background: color-mix(in srgb, var(--accent) 72%, white);
 	}
 
-	.index-card-definition {
+	.wiki-card-definition {
 		display: -webkit-box;
 		color: var(--muted);
 		font-size: 12px;
@@ -258,7 +258,7 @@ function entryHref(entry: (typeof entries)[number]) {
 		overflow: hidden;
 	}
 
-	.index-list[data-view='timeline'] {
+	.wiki-list[data-view='timeline'] {
 		display: flex;
 		flex-direction: column;
 		align-items: flex-start;
@@ -266,7 +266,7 @@ function entryHref(entry: (typeof entries)[number]) {
 		max-width: 520px;
 	}
 
-	.index-list[data-view='timeline'] .index-card a {
+	.wiki-list[data-view='timeline'] .wiki-card a {
 		display: flex;
 		align-items: center;
 		gap: 9px;
@@ -280,7 +280,7 @@ function entryHref(entry: (typeof entries)[number]) {
 		overflow: visible;
 	}
 
-	.index-list[data-view='timeline'] .index-card a::before {
+	.wiki-list[data-view='timeline'] .wiki-card a::before {
 		content: '';
 		width: 7px;
 		height: 7px;
@@ -294,42 +294,42 @@ function entryHref(entry: (typeof entries)[number]) {
 			transform 160ms ease;
 	}
 
-	.index-list[data-view='timeline'] .index-card a:hover,
-	.index-list[data-view='timeline'] .index-card a:focus-visible {
+	.wiki-list[data-view='timeline'] .wiki-card a:hover,
+	.wiki-list[data-view='timeline'] .wiki-card a:focus-visible {
 		box-shadow: 0 12px 28px rgba(20, 24, 40, 0.08);
 	}
 
-	.index-list[data-view='timeline'] .index-card a:hover::before,
-	.index-list[data-view='timeline'] .index-card a:focus-visible::before {
+	.wiki-list[data-view='timeline'] .wiki-card a:hover::before,
+	.wiki-list[data-view='timeline'] .wiki-card a:focus-visible::before {
 		border-color: color-mix(in srgb, var(--accent) 28%, white);
 		box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 8%, transparent);
 		transform: scale(1.08);
 	}
 
-	.index-list[data-view='timeline'] .index-card-title {
+	.wiki-list[data-view='timeline'] .wiki-card-title {
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		font-size: 14px;
 	}
 
-	.index-list[data-view='timeline'] .index-card-title::after {
+	.wiki-list[data-view='timeline'] .wiki-card-title::after {
 		display: none;
 	}
 
-	.index-list[data-view='timeline'] .index-card-definition,
-	.index-list[data-view='timeline'] .index-card-tags {
+	.wiki-list[data-view='timeline'] .wiki-card-definition,
+	.wiki-list[data-view='timeline'] .wiki-card-tags {
 		display: none;
 	}
 
-	.index-card-tags {
+	.wiki-card-tags {
 		display: flex;
 		flex-wrap: wrap;
 		align-self: end;
 		gap: 5px;
 	}
 
-	.index-card-tags em {
+	.wiki-card-tags em {
 		max-width: 100%;
 		padding: 3px 7px;
 		border-radius: 999px;
@@ -341,28 +341,28 @@ function entryHref(entry: (typeof entries)[number]) {
 		overflow-wrap: anywhere;
 	}
 
-	.empty-index {
+	.empty-wiki {
 		margin: 18px 0 0;
 		color: var(--muted);
 		font-size: 13px;
 		line-height: 1.7;
 	}
 
-	.empty-index[hidden] {
+	.empty-wiki[hidden] {
 		display: none;
 	}
 
 	@media (max-width: 900px) {
-		.index-frame {
+		.wiki-frame {
 			padding: 24px 18px;
 		}
 
-		.index-header {
+		.wiki-header {
 			align-items: flex-start;
 			flex-direction: column;
 		}
 
-		.index-list {
+		.wiki-list {
 			grid-template-columns: 1fr;
 		}
 

@@ -1,12 +1,12 @@
 ---
 import BlogLayout from '../../components/BlogLayout.astro';
-import IndexTermHighlighter from '../../components/IndexTermHighlighter.astro';
+import WikiTermHighlighter from '../../components/WikiTermHighlighter.astro';
 import Layout from '../../layouts/Layout.astro';
-import { findIndexEntryByReference, getAllIndexEntries } from '../../lib/indexEntries';
+import { findWikiEntryByReference, getAllWikiEntries } from '../../lib/wikiEntries';
 import { getAllPosts, getPostCategories, getPostCategoryCounts, getPostTags } from '../../lib/posts';
 
 export async function getStaticPaths() {
-	const entries = await getAllIndexEntries();
+	const entries = await getAllWikiEntries();
 
 	return entries.map((entry) => ({
 		params: { slug: entry.slug },
@@ -20,15 +20,15 @@ const posts = await getAllPosts();
 const categories = getPostCategories(posts);
 const categoryCounts = getPostCategoryCounts(posts);
 const tags = getPostTags(posts);
-const entries = await getAllIndexEntries();
+const entries = await getAllWikiEntries();
 const entryTags = entry.frontmatter.tags ?? [];
-const indexTermEntries = entries.filter((item) => item.slug !== entry.slug);
+const wikiTermEntries = entries.filter((item) => item.slug !== entry.slug);
 const relatedEntries = entryTags
-	.map((reference) => findIndexEntryByReference(entries, reference))
+	.map((reference) => findWikiEntryByReference(entries, reference))
 	.filter((relatedEntry) => relatedEntry && relatedEntry.slug !== entry.slug);
 ---
 
-<Layout title={`${entry.title} | Index`} description={entry.definition}>
+<Layout title={`${entry.title} | Wiki`} description={entry.definition}>
 	<BlogLayout
 		categories={categories}
 		categoryCounts={categoryCounts}
@@ -36,11 +36,11 @@ const relatedEntries = entryTags
 		postCount={posts.length}
 		activeTags={entryTags}
 	>
-		<article class="post-card index-detail-card">
+		<article class="post-card wiki-detail-card">
 			<h1>{entry.title}</h1>
 			{entry.definition && <p class="post-description">{entry.definition}</p>}
 			<div class="meta">
-				<span>Index</span>
+				<span>Wiki</span>
 				{
 					entryTags.length > 0 && (
 						<div class="post-tags">
@@ -55,15 +55,15 @@ const relatedEntries = entryTags
 			<div class="article-content">
 				<Content />
 			</div>
-			<IndexTermHighlighter entries={indexTermEntries} />
+			<WikiTermHighlighter entries={wikiTermEntries} />
 		</article>
 
 		{
 			relatedEntries.length > 0 && (
-				<nav class="post-neighbors index-related" aria-label="관련 Index">
+				<nav class="post-neighbors wiki-related" aria-label="관련 Wiki">
 					{relatedEntries.map((relatedEntry) => (
-						<a href={`/index/${relatedEntry.slug}/`} data-astro-prefetch>
-							<span>Related Index</span>
+						<a href={`/wiki/${relatedEntry.slug}/`} data-astro-prefetch>
+							<span>Related Wiki</span>
 							<strong>{relatedEntry.title}</strong>
 							<p>{relatedEntry.definition}</p>
 							<div class="neighbor-meta">
