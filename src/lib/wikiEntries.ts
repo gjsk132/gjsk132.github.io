@@ -1,17 +1,25 @@
 export interface WikiEntryFrontmatter {
 	title?: string;
 	define?: string;
+	defines?: WikiDefinitionInput[];
 	description?: string;
-	tags?: string[];
 	property?: string;
 	draft?: boolean;
 }
+
+export interface WikiDefinition {
+	title: string;
+	define: string;
+}
+
+type WikiDefinitionInput = string | Record<string, string> | WikiDefinition;
 
 export interface WikiEntry {
 	slug: string;
 	title: string;
 	frontmatter: WikiEntryFrontmatter;
 	definition: string;
+	definitions: WikiDefinition[];
 	body: string;
 	Content: unknown;
 }
@@ -62,22 +70,21 @@ function parseFrontmatter(rawEntry: string): WikiEntryFrontmatter {
 		const [, key, rawValue] = keyValue;
 		const value = parseScalar(rawValue);
 
-		if (key === 'tags') {
-			if (value) {
-				frontmatter.tags = value
-					.replace(/^\[|\]$/g, '')
-					.split(',')
-					.map((item) => parseScalar(item))
-					.filter(Boolean);
-				continue;
-			}
-
-			const items: string[] = [];
+		if (key === 'defines') {
+			const items: WikiDefinitionInput[] = [];
 			while (lines[index + 1]?.match(/^\s*-\s+/)) {
 				index += 1;
-				items.push(parseScalar(lines[index].replace(/^\s*-\s+/, '')));
+				const item = lines[index].replace(/^\s*-\s+/, '');
+				const itemMatch = item.match(/^([^:]+):\s*(.*)$/);
+
+				if (itemMatch) {
+					const [, title, define] = itemMatch;
+					items.push({ [parseScalar(title)]: parseScalar(define) });
+				} else {
+					items.push(parseScalar(item));
+				}
 			}
-			frontmatter.tags = items;
+			frontmatter.defines = items;
 			continue;
 		}
 
@@ -87,7 +94,7 @@ function parseFrontmatter(rawEntry: string): WikiEntryFrontmatter {
 		}
 
 		if (['title', 'define', 'description', 'property'].includes(key)) {
-			frontmatter[key as keyof Omit<WikiEntryFrontmatter, 'tags' | 'draft'>] = value;
+			frontmatter[key as keyof Omit<WikiEntryFrontmatter, 'draft'>] = value;
 		}
 	}
 
@@ -105,6 +112,33 @@ function plainBody(body: string) {
 		.trim();
 }
 
+function normalizeDefinitions(defines: WikiEntryFrontmatter['defines']): WikiDefinition[] {
+	if (!defines) return [];
+	const items = Array.isArray(defines) ? defines : [defines];
+
+	return items
+		.flatMap((item) => {
+			if (!item) return [];
+
+			if (typeof item === 'string') {
+				const [title, ...defineParts] = item.split(':');
+				const define = defineParts.join(':');
+				if (!title || !define) return [];
+				return [{ title: title.trim(), define: define.trim() }];
+			}
+
+			if ('title' in item && 'define' in item) {
+				return [{ title: String(item.title).trim(), define: String(item.define).trim() }];
+			}
+
+			return Object.entries(item).map(([title, define]) => ({
+				title: title.trim(),
+				define: String(define).trim(),
+			}));
+		})
+		.filter((definition) => definition.title && definition.define);
+}
+
 export async function getAllWikiEntries() {
 	const entries = await Promise.all(
 		Object.entries(wikiModules).map(async ([path, loadEntry]) => {
@@ -113,13 +147,15 @@ export async function getAllWikiEntries() {
 			const slug = slugFromPath(path);
 			const frontmatter = { ...parseFrontmatter(rawEntry), ...(mod.frontmatter ?? {}) };
 			const body = stripFrontmatter(rawEntry);
-			const definition = frontmatter.define ?? frontmatter.description ?? plainBody(body);
+			const definitions = normalizeDefinitions(frontmatter.defines);
+			const definition = definitions[0]?.define ?? frontmatter.define ?? frontmatter.description ?? plainBody(body);
 
 			return {
 				slug,
 				title: frontmatter.title ?? titleFromSlug(slug),
 				frontmatter,
 				definition,
+				definitions,
 				body,
 				Content: mod.Content,
 			};
@@ -129,11 +165,6 @@ export async function getAllWikiEntries() {
 	return entries
 		.filter((entry) => !entry.frontmatter.draft)
 		.sort((a, b) => a.title.localeCompare(b.title, 'ko-KR'));
-}
-
-export function getWikiTags(entries: WikiEntry[]) {
-	const tags = entries.flatMap((entry) => entry.frontmatter.tags ?? []);
-	return [...new Set(tags.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ko-KR'));
 }
 
 export function findWikiEntryByReference(entries: WikiEntry[], reference: string) {
