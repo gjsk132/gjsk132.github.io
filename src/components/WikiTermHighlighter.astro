@@ -3,6 +3,10 @@ interface WikiTerm {
 	slug: string;
 	title: string;
 	definition: string;
+	definitions?: {
+		title: string;
+		define: string;
+	}[];
 }
 
 interface Props {
@@ -16,6 +20,7 @@ const terms = Astro.props.entries
 		slug: entry.slug,
 		title: entry.title.trim(),
 		definition: entry.definition.trim(),
+		definitions: entry.definitions ?? [],
 	}))
 	.filter((entry) => entry.title && entry.definition)
 	.sort((a, b) => b.title.length - a.title.length);
@@ -127,8 +132,9 @@ const terms = Astro.props.entries
 						const marker = document.createElement("span");
 						marker.className = "wiki-term-link";
 						marker.textContent = match;
-						marker.dataset.definition = term.definition;
+						marker.dataset.definition = termDefinition(term);
 						marker.setAttribute("tabindex", "0");
+						marker.append(createTooltip(term));
 						marker.addEventListener("mouseenter", positionTooltip);
 						marker.addEventListener("focus", positionTooltip);
 
@@ -171,6 +177,68 @@ const terms = Astro.props.entries
 			marker.style.setProperty("--wiki-tooltip-shift", `${shift}px`);
 		}
 
+		function termDefinition(term) {
+			if (!Array.isArray(term.definitions) || term.definitions.length < 2) {
+				return term.definition;
+			}
+
+			const summaries = term.definitions
+				.slice(0, 3)
+				.map((definition, index) => `[${index + 1}] ${definition.title}\n${definition.define}`)
+				.join("\n\n");
+			const suffix = term.definitions.length > 3 ? `\n외 ${term.definitions.length - 3}개` : "";
+
+			return `${summaries}${suffix}`;
+		}
+
+		function termDefinitionItems(term) {
+			if (!Array.isArray(term.definitions) || term.definitions.length < 2) {
+				return [{ title: "", define: term.definition }];
+			}
+
+			return term.definitions.slice(0, 3);
+		}
+
+		function createTooltip(term) {
+			const tooltip = document.createElement("span");
+			tooltip.className = "wiki-term-tooltip";
+			tooltip.setAttribute("aria-hidden", "true");
+
+			termDefinitionItems(term).forEach((definition, index) => {
+				const row = document.createElement("span");
+				row.className = "wiki-term-tooltip-row";
+
+				if (definition.title) {
+					const number = document.createElement("span");
+					number.className = "wiki-term-tooltip-number";
+					number.textContent = `[${index + 1}]`;
+
+					const title = document.createElement("strong");
+					title.textContent = definition.title;
+
+					const body = document.createElement("em");
+					body.textContent = definition.define;
+
+					row.append(number, title, body);
+				} else {
+					const body = document.createElement("em");
+					body.textContent = definition.define;
+					row.append(body);
+				}
+
+				tooltip.append(row);
+			});
+
+			if (Array.isArray(term.definitions) && term.definitions.length > 3) {
+				const more = document.createElement("span");
+				more.className = "wiki-term-tooltip-more";
+				more.textContent = `외 ${term.definitions.length - 3}개`;
+				tooltip.append(more);
+			}
+
+			return tooltip;
+		}
+
 		if (document.readyState === "loading") {
 			document.addEventListener("DOMContentLoaded", run, { once: true });
 		} else {
@@ -203,9 +271,7 @@ const terms = Astro.props.entries
 		outline: 0;
 	}
 
-	.post-card .wiki-term-link::after {
-		content: attr(data-definition);
-
+	.post-card .wiki-term-tooltip {
 		position: absolute;
 		left: 50%;
 		bottom: calc(100% + 10px);
@@ -215,6 +281,8 @@ const terms = Astro.props.entries
 		width: max-content;
 		max-width: min(260px, calc(100vw - 32px));
 
+		display: grid;
+		gap: 9px;
 		padding: 10px 12px;
 		border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--line));
 		border-radius: 12px;
@@ -225,6 +293,8 @@ const terms = Astro.props.entries
 		font-size: 12px;
 		font-weight: 500;
 		line-height: 1.55;
+		white-space: normal;
+		text-align: left;
 
 		box-shadow: 0 10px 22px rgba(20, 24, 40, 0.09);
 
@@ -235,6 +305,44 @@ const terms = Astro.props.entries
 		transition:
 			opacity 0s linear,
 			transform 0s linear;
+	}
+
+	.post-card .wiki-term-tooltip-row {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		column-gap: 7px;
+		row-gap: 2px;
+	}
+
+	.post-card .wiki-term-tooltip-number {
+		color: var(--accent);
+		font-weight: 800;
+	}
+
+	.post-card .wiki-term-tooltip strong {
+		color: var(--text);
+		font-size: 12px;
+		font-weight: 800;
+		line-height: 1.4;
+	}
+
+	.post-card .wiki-term-tooltip em {
+		grid-column: 2;
+		color: var(--muted);
+		font-size: 12px;
+		font-style: normal;
+		font-weight: 500;
+		line-height: 1.55;
+	}
+
+	.post-card .wiki-term-tooltip-row:first-child:last-child em {
+		grid-column: 1 / -1;
+	}
+
+	.post-card .wiki-term-tooltip-more {
+		color: var(--muted);
+		font-size: 11px;
+		font-weight: 700;
 	}
 
 	.post-card .wiki-term-link::before {
@@ -256,8 +364,8 @@ const terms = Astro.props.entries
 			transform 0s linear;
 	}
 
-	.post-card .wiki-term-link:hover::after,
-	.post-card .wiki-term-link:focus-visible::after {
+	.post-card .wiki-term-link:hover .wiki-term-tooltip,
+	.post-card .wiki-term-link:focus-visible .wiki-term-tooltip {
 		opacity: 1;
 		transform: translateX(calc(-50% + var(--wiki-tooltip-shift))) translateY(0);
 

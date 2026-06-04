@@ -1,6 +1,6 @@
 ---
-import BlogLayout from '../components/BlogLayout.astro';
-import Layout from '../layouts/Layout.astro';
+import BlogLayout from "../components/BlogLayout.astro";
+import Layout from "../layouts/Layout.astro";
 import {
 	formatPostDate,
 	getAllPosts,
@@ -8,26 +8,29 @@ import {
 	getPostCategoryCounts,
 	getPostDate,
 	getPostTags,
-} from '../lib/posts';
-import { getAllWikiEntries } from '../lib/wikiEntries';
+} from "../lib/posts";
+import { getAllWikiEntries } from "../lib/wikiEntries";
 
 const posts = await getAllPosts();
 const wikiEntries = await getAllWikiEntries();
 const categories = getPostCategories(posts);
 const categoryCounts = getPostCategoryCounts(posts);
 const tags = getPostTags(posts);
-const initialCategory = Astro.url.searchParams.get('category');
-const initialTag = Astro.url.searchParams.get('tag');
+const initialCategory = Astro.url.searchParams.get("category");
+const initialTag = Astro.url.searchParams.get("tag");
 const initialFilteredPosts = posts.filter((post) => {
 	if (initialCategory) return postCategory(post) === initialCategory;
 	if (initialTag) return postTags(post).includes(initialTag);
 	return true;
 });
-const initialListTitle = initialCategory ?? (initialTag ? `#${initialTag}` : 'HOME');
+const initialListTitle =
+	initialCategory ?? (initialTag ? `#${initialTag}` : "HOME");
 const initialPostCount = initialFilteredPosts.length;
 
 function postCategory(post: (typeof posts)[number]) {
-	return post.frontmatter.category ?? post.frontmatter.categories?.[0] ?? 'none';
+	return (
+		post.frontmatter.category ?? post.frontmatter.categories?.[0] ?? "none"
+	);
 }
 
 function postTags(post: (typeof posts)[number]) {
@@ -36,41 +39,41 @@ function postTags(post: (typeof posts)[number]) {
 
 function postYear(post: (typeof posts)[number]) {
 	const date = getPostDate(post);
-	return date ? new Date(date).getFullYear().toString() : '';
+	return date ? new Date(date).getFullYear().toString() : "";
 }
 
 function postMonthDay(post: (typeof posts)[number]) {
 	const date = getPostDate(post);
-	if (!date) return '';
+	if (!date) return "";
 
-	return new Intl.DateTimeFormat('ko-KR', {
-		month: '2-digit',
-		day: '2-digit',
+	return new Intl.DateTimeFormat("ko-KR", {
+		month: "2-digit",
+		day: "2-digit",
 	})
 		.format(new Date(date))
-		.replace(/\. /g, '-')
-		.replace('.', '');
+		.replace(/\. /g, "-")
+		.replace(".", "");
 }
 
 function plainPostBody(post: (typeof posts)[number]) {
 	return post.body
-		.replace(/```[\s\S]*?```/g, ' ')
-		.replace(/!\[\[[^\]]+\]\]/g, ' ')
-		.replace(/!\[[^\]]*\]\([^)]+\)/g, ' ')
-		.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-		.replace(/[#>*_`~|[\]-]/g, ' ')
-		.replace(/\s+/g, ' ')
+		.replace(/```[\s\S]*?```/g, " ")
+		.replace(/!\[\[[^\]]+\]\]/g, " ")
+		.replace(/!\[[^\]]*\]\([^)]+\)/g, " ")
+		.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+		.replace(/[#>*_`~|[\]-]/g, " ")
+		.replace(/\s+/g, " ")
 		.trim();
 }
 
 function plainWikiBody(wikiEntry: (typeof wikiEntries)[number]) {
 	return wikiEntry.body
-		.replace(/```[\s\S]*?```/g, ' ')
-		.replace(/!\[\[[^\]]+\]\]/g, ' ')
-		.replace(/!\[[^\]]*\]\([^)]+\)/g, ' ')
-		.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-		.replace(/[#>*_`~|[\]-]/g, ' ')
-		.replace(/\s+/g, ' ')
+		.replace(/```[\s\S]*?```/g, " ")
+		.replace(/!\[\[[^\]]+\]\]/g, " ")
+		.replace(/!\[[^\]]*\]\([^)]+\)/g, " ")
+		.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+		.replace(/[#>*_`~|[\]-]/g, " ")
+		.replace(/\s+/g, " ")
 		.trim();
 }
 
@@ -78,37 +81,67 @@ function searchPreview(post: (typeof posts)[number]) {
 	return plainPostBody(post) || post.excerpt;
 }
 
-function wikiEntryTags(entry: (typeof wikiEntries)[number]) {
-	return entry.frontmatter.tags ?? [];
+function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
+	return [entry.title, entry.slug, entry.slug.split("/").at(-1) ?? ""]
+		.map((value) => value.toLowerCase())
+		.join("|");
 }
 
-function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
+function wikiDefinitionSearchText(entry: (typeof wikiEntries)[number]) {
 	return [
-		entry.title,
-		entry.slug,
-		entry.slug.split('/').at(-1) ?? '',
+		entry.definition,
+		...entry.definitions.flatMap((definition) => [
+			definition.title,
+			definition.define,
+		]),
 	]
-		.map((value) => value.toLowerCase())
-		.join('|');
+		.join(" ")
+		.toLowerCase();
+}
+
+function wikiDefinitionPreview(entry: (typeof wikiEntries)[number]) {
+	if (entry.definitions.length === 0) return entry.definition;
+
+	return entry.definitions
+		.map((definition) => `${definition.title}: ${definition.define}`)
+		.join(" ");
+}
+
+function wikiDefinitions(entry: (typeof wikiEntries)[number]) {
+	if (entry.definitions.length > 0) return entry.definitions;
+	if (!entry.definition) return [];
+
+	return [{ title: entry.title, define: entry.definition }];
 }
 ---
 
 <Layout title="gjsk132 blog" description="gjsk132's blog">
 	<script is:inline>
 		const routeFilterParams = new URLSearchParams(window.location.search);
-		if (routeFilterParams.has('category') || routeFilterParams.has('tag')) {
-			document.documentElement.dataset.routeFilterPending = 'true';
+		if (routeFilterParams.has("category") || routeFilterParams.has("tag")) {
+			document.documentElement.dataset.routeFilterPending = "true";
 		}
 	</script>
-	<BlogLayout categories={categories} categoryCounts={categoryCounts} tags={tags} postCount={posts.length}>
+	<BlogLayout
+		categories={categories}
+		categoryCounts={categoryCounts}
+		tags={tags}
+		postCount={posts.length}
+	>
 		<section class="home-post-frame">
 			<section class="search-panel" data-search-panel hidden>
 				<h1 class="search-title">Search</h1>
 				<label class="search-field">
 					<svg aria-hidden="true" viewBox="0 0 24 24">
-						<path d="M10.8 4.5a6.3 6.3 0 0 1 5 10.1l3.8 3.8a1 1 0 0 1-1.4 1.4l-3.8-3.8a6.3 6.3 0 1 1-3.6-11.5Zm0 2a4.3 4.3 0 1 0 0 8.6 4.3 4.3 0 0 0 0-8.6Z" />
+						<path
+							d="M10.8 4.5a6.3 6.3 0 0 1 5 10.1l3.8 3.8a1 1 0 0 1-1.4 1.4l-3.8-3.8a6.3 6.3 0 1 1-3.6-11.5Zm0 2a4.3 4.3 0 1 0 0 8.6 4.3 4.3 0 0 0 0-8.6Z"
+						></path>
 					</svg>
-					<input type="search" placeholder="검색어를 입력하세요" data-search-input />
+					<input
+						type="search"
+						placeholder="검색어를 입력하세요"
+						data-search-input
+					/>
 				</label>
 				<div class="search-results" data-search-results>
 					{
@@ -116,22 +149,38 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 							<a
 								href={`/blog/${post.slug}/`}
 								data-search-result
-								data-search-title={(post.frontmatter.title ?? post.slug).toLowerCase()}
+								data-search-title={(
+									post.frontmatter.title ?? post.slug
+								).toLowerCase()}
 								data-search-summary={post.excerpt.toLowerCase()}
-								data-search-tags={postTags(post).join(' ').toLowerCase()}
-								data-search-body={plainPostBody(post).toLowerCase()}
-								data-result-title={post.frontmatter.title ?? post.slug}
+								data-search-tags={postTags(post)
+									.join(" ")
+									.toLowerCase()}
+								data-search-body={plainPostBody(
+									post,
+								).toLowerCase()}
+								data-result-title={
+									post.frontmatter.title ?? post.slug
+								}
 								data-result-summary={post.excerpt}
-								data-result-tags={postTags(post).map((tag) => `#${tag}`).join(' ')}
+								data-result-tags={postTags(post)
+									.map((tag) => `#${tag}`)
+									.join(" ")}
 								data-result-body={plainPostBody(post)}
 								data-result-fallback={searchPreview(post)}
 								hidden
 							>
-								<strong data-result-title-text>{post.frontmatter.title ?? post.slug}</strong>
-								<p data-result-preview-text>{searchPreview(post)}</p>
+								<strong data-result-title-text>
+									{post.frontmatter.title ?? post.slug}
+								</strong>
+								<p data-result-preview-text>
+									{searchPreview(post)}
+								</p>
 								<div class="search-result-meta">
 									<span>{postCategory(post)}</span>
-									{postTags(post).map((tag) => <span>#{tag}</span>)}
+									{postTags(post).map((tag) => (
+										<span>#{tag}</span>
+									))}
 								</div>
 							</a>
 						))
@@ -142,27 +191,41 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 								href={`/wiki/${wikiEntry.slug}/`}
 								data-search-result
 								data-search-title={wikiEntry.title.toLowerCase()}
-								data-search-summary={wikiEntry.definition.toLowerCase()}
+								data-search-summary={wikiDefinitionSearchText(
+									wikiEntry,
+								)}
 								data-search-tags=""
-								data-search-body={plainWikiBody(wikiEntry).toLowerCase()}
+								data-search-body={plainWikiBody(
+									wikiEntry,
+								).toLowerCase()}
 								data-result-title={wikiEntry.title}
-								data-result-summary={wikiEntry.definition}
+								data-result-summary={wikiDefinitionPreview(
+									wikiEntry,
+								)}
 								data-result-tags=""
 								data-result-body={plainWikiBody(wikiEntry)}
-								data-result-fallback={wikiEntry.definition || plainWikiBody(wikiEntry)}
+								data-result-fallback={
+									wikiDefinitionPreview(wikiEntry) ||
+									plainWikiBody(wikiEntry)
+								}
 								hidden
 							>
-								<strong data-result-title-text>{wikiEntry.title}</strong>
-								<p data-result-preview-text>{wikiEntry.definition}</p>
+								<strong data-result-title-text>
+									{wikiEntry.title}
+								</strong>
+								<p data-result-preview-text>
+									{wikiDefinitionPreview(wikiEntry)}
+								</p>
 								<div class="search-result-meta">
 									<span>Wiki</span>
-									{wikiEntryTags(wikiEntry).map((tag) => <span>#{tag}</span>)}
 								</div>
 							</a>
 						))
 					}
 				</div>
-				<p class="empty-search" data-empty-search hidden>검색 결과가 없습니다.</p>
+				<p class="empty-search" data-empty-search hidden>
+					검색 결과가 없습니다.
+				</p>
 			</section>
 
 			<h1 class="home-title" data-filter-title>
@@ -171,9 +234,21 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 					<strong data-visible-post-count>{initialPostCount}</strong>
 				</span>
 				<span class="page-size-control" aria-label="페이지당 게시글 수">
-					<button type="button" data-page-size-option="5" aria-pressed="true">5</button>
-					<button type="button" data-page-size-option="10" aria-pressed="false">10</button>
-					<button type="button" data-page-size-option="20" aria-pressed="false">20</button>
+					<button
+						type="button"
+						data-page-size-option="5"
+						aria-pressed="true">5</button
+					>
+					<button
+						type="button"
+						data-page-size-option="10"
+						aria-pressed="false">10</button
+					>
+					<button
+						type="button"
+						data-page-size-option="20"
+						aria-pressed="false">20</button
+					>
 				</span>
 			</h1>
 
@@ -183,13 +258,29 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 						class="tag-wiki-summary"
 						aria-label={`${wikiEntry.title} Wiki 설명`}
 						data-tag-wiki-summary
-						data-wiki-reference-keys={wikiEntryReferenceKeys(wikiEntry)}
+						data-wiki-reference-keys={wikiEntryReferenceKeys(
+							wikiEntry,
+						)}
 						hidden
 					>
-						<p>
-							{wikiEntry.definition}
-						</p>
-						<a href={`/wiki/${wikiEntry.slug}/`} aria-label={`${wikiEntry.title} Wiki 보기`} title="Wiki 보기">
+						<div class="tag-wiki-definitions">
+							{wikiDefinitions(wikiEntry).map(
+								(definition, index) => (
+									<section>
+										<strong>
+											<span>[{index + 1}]</span>
+											{definition.title}
+										</strong>
+										<p>{definition.define}</p>
+									</section>
+								),
+							)}
+						</div>
+						<a
+							href={`/wiki/${wikiEntry.slug}/`}
+							aria-label={`${wikiEntry.title} Wiki 보기`}
+							title="Wiki 보기"
+						>
 							<svg aria-hidden="true" viewBox="0 0 24 24">
 								<path d="M7 5h6v2H7v10h10v-6h2v6.2c0 1-.8 1.8-1.8 1.8H6.8c-1 0-1.8-.8-1.8-1.8V6.8c0-1 .8-1.8 1.8-1.8H13Zm8 0h4v4h-2V8.4l-5.3 5.3-1.4-1.4L15.6 7H15V5Z" />
 							</svg>
@@ -205,32 +296,44 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 							<li
 								data-post-item
 								data-category={postCategory(post)}
-								data-tags={postTags(post).join('|')}
+								data-tags={postTags(post).join("|")}
 								data-year={postYear(post)}
 								hidden={!initialFilteredPosts.includes(post)}
 							>
 								<div class="timeline-date" aria-hidden="true">
-									<strong data-timeline-year></strong>
+									<strong data-timeline-year />
 									<span>{postMonthDay(post)}</span>
 								</div>
 								<a href={`/blog/${post.slug}/`}>
-									<h2 class="home-post-title">{post.frontmatter.title ?? post.slug}</h2>
+									<h2 class="home-post-title">
+										{post.frontmatter.title ?? post.slug}
+									</h2>
 									{post.excerpt && <p>{post.excerpt}</p>}
 									<div class="home-post-meta">
 										<span>{postCategory(post)}</span>
 										{getPostDate(post) && (
 											<>
-												<i aria-hidden="true"></i>
-												<time datetime={new Date(getPostDate(post)!).toISOString()}>
-													{formatPostDate(getPostDate(post))}
+												<i aria-hidden="true" />
+												<time
+													datetime={new Date(
+														getPostDate(post)!,
+													).toISOString()}
+												>
+													{formatPostDate(
+														getPostDate(post),
+													)}
 												</time>
 											</>
 										)}
 										{post.frontmatter.tags?.length > 0 && (
 											<>
-												<i aria-hidden="true"></i>
+												<i aria-hidden="true" />
 												<div class="home-post-tags">
-													{post.frontmatter.tags.map((tag) => <em>{tag}</em>)}
+													{post.frontmatter.tags.map(
+														(tag) => (
+															<em>{tag}</em>
+														),
+													)}
 												</div>
 											</>
 										)}
@@ -240,45 +343,92 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 						))}
 					</ul>
 				) : (
-					<p>아직 등록된 글이 없습니다. content/post 폴더에 Markdown 파일을 추가해 주세요.</p>
+					<p>
+						아직 등록된 글이 없습니다. content/post 폴더에 Markdown
+						파일을 추가해 주세요.
+					</p>
 				)
 			}
-			<p class="empty-filter" data-empty-filter hidden>선택한 조건에 등록된 글이 없습니다.</p>
-			<nav class="pagination" aria-label="게시글 페이지" data-pagination hidden>
-				<button type="button" data-page-prev aria-label="이전 페이지">Prev</button>
+			<p class="empty-filter" data-empty-filter hidden>
+				선택한 조건에 등록된 글이 없습니다.
+			</p>
+			<nav
+				class="pagination"
+				aria-label="게시글 페이지"
+				data-pagination
+				hidden
+			>
+				<button type="button" data-page-prev aria-label="이전 페이지"
+					>Prev</button
+				>
 				<span data-page-status></span>
-				<button type="button" data-page-next aria-label="다음 페이지">Next</button>
+				<button type="button" data-page-next aria-label="다음 페이지"
+					>Next</button
+				>
 			</nav>
 		</section>
 	</BlogLayout>
 </Layout>
 
 <script>
-	const selectedCategory = new URLSearchParams(window.location.search).get('category');
-	const selectedTag = new URLSearchParams(window.location.search).get('tag');
-	const shouldOpenSearch = new URLSearchParams(window.location.search).has('search');
-	const filterTitle = document.querySelector<HTMLElement>('[data-filter-title]');
-	const postListTitle = document.querySelector<HTMLElement>('[data-post-list-title]');
-	const postList = document.querySelector<HTMLElement>('[data-post-list]');
-	const postItems = Array.from(document.querySelectorAll<HTMLElement>('[data-post-item]'));
-	const visiblePostCount = document.querySelector<HTMLElement>('[data-visible-post-count]');
-	const emptyFilter = document.querySelector<HTMLElement>('[data-empty-filter]');
-	const viewButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-view-button]'));
-	const searchPanel = document.querySelector<HTMLElement>('[data-search-panel]');
-	const searchInput = document.querySelector<HTMLInputElement>('[data-search-input]');
-	const searchResults = Array.from(document.querySelectorAll<HTMLElement>('[data-search-result]'));
-	const emptySearch = document.querySelector<HTMLElement>('[data-empty-search]');
-	const tagWikiSummaries = Array.from(document.querySelectorAll<HTMLElement>('[data-tag-wiki-summary]'));
-	const pageSizeButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-page-size-option]'));
-	const pagination = document.querySelector<HTMLElement>('[data-pagination]');
-	const pagePrev = document.querySelector<HTMLButtonElement>('[data-page-prev]');
-	const pageNext = document.querySelector<HTMLButtonElement>('[data-page-next]');
-	const pageStatus = document.querySelector<HTMLElement>('[data-page-status]');
-	const mobilePaginationQuery = window.matchMedia('(max-width: 900px)');
-	let searchQuery = '';
-	let currentViewMode = 'posts';
+	const selectedCategory = new URLSearchParams(window.location.search).get(
+		"category",
+	);
+	const selectedTag = new URLSearchParams(window.location.search).get("tag");
+	const shouldOpenSearch = new URLSearchParams(window.location.search).has(
+		"search",
+	);
+	const filterTitle = document.querySelector<HTMLElement>(
+		"[data-filter-title]",
+	);
+	const postListTitle = document.querySelector<HTMLElement>(
+		"[data-post-list-title]",
+	);
+	const postList = document.querySelector<HTMLElement>("[data-post-list]");
+	const postItems = Array.from(
+		document.querySelectorAll<HTMLElement>("[data-post-item]"),
+	);
+	const visiblePostCount = document.querySelector<HTMLElement>(
+		"[data-visible-post-count]",
+	);
+	const emptyFilter = document.querySelector<HTMLElement>(
+		"[data-empty-filter]",
+	);
+	const viewButtons = Array.from(
+		document.querySelectorAll<HTMLButtonElement>("[data-view-button]"),
+	);
+	const searchPanel = document.querySelector<HTMLElement>(
+		"[data-search-panel]",
+	);
+	const searchInput = document.querySelector<HTMLInputElement>(
+		"[data-search-input]",
+	);
+	const searchResults = Array.from(
+		document.querySelectorAll<HTMLElement>("[data-search-result]"),
+	);
+	const emptySearch = document.querySelector<HTMLElement>(
+		"[data-empty-search]",
+	);
+	const tagWikiSummaries = Array.from(
+		document.querySelectorAll<HTMLElement>("[data-tag-wiki-summary]"),
+	);
+	const pageSizeButtons = Array.from(
+		document.querySelectorAll<HTMLButtonElement>("[data-page-size-option]"),
+	);
+	const pagination = document.querySelector<HTMLElement>("[data-pagination]");
+	const pagePrev =
+		document.querySelector<HTMLButtonElement>("[data-page-prev]");
+	const pageNext =
+		document.querySelector<HTMLButtonElement>("[data-page-next]");
+	const pageStatus =
+		document.querySelector<HTMLElement>("[data-page-status]");
+	const mobilePaginationQuery = window.matchMedia("(max-width: 900px)");
+	let searchQuery = "";
+	let currentViewMode = "posts";
 	let currentPage = 1;
-	let pageSize = mobilePaginationQuery.matches ? 10 : Number(window.localStorage.getItem('postPageSize') ?? '5');
+	let pageSize = mobilePaginationQuery.matches
+		? 10
+		: Number(window.localStorage.getItem("postPageSize") ?? "5");
 
 	if (![5, 10, 20].includes(pageSize)) {
 		pageSize = mobilePaginationQuery.matches ? 10 : 5;
@@ -291,53 +441,64 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		currentPage = 1;
 
 		for (const pageSizeButton of pageSizeButtons) {
-			pageSizeButton.setAttribute('aria-pressed', String(Number(pageSizeButton.dataset.pageSizeOption) === 10));
+			pageSizeButton.setAttribute(
+				"aria-pressed",
+				String(Number(pageSizeButton.dataset.pageSizeOption) === 10),
+			);
 		}
 
 		applyPostFilters();
 	}
 
 	function updateTimelineYears() {
-		let currentYear = '';
+		let currentYear = "";
 		let lastVisibleItem: HTMLElement | undefined;
 
 		for (const item of postItems) {
 			delete item.dataset.lastVisible;
 
-			const yearLabel = item.querySelector<HTMLElement>('[data-timeline-year]');
+			const yearLabel = item.querySelector<HTMLElement>(
+				"[data-timeline-year]",
+			);
 			if (!yearLabel) continue;
 
 			if (item.hidden) {
-				yearLabel.textContent = '';
+				yearLabel.textContent = "";
 				continue;
 			}
 
-			const year = item.dataset.year ?? '';
-			yearLabel.textContent = year && year !== currentYear ? year : '';
+			const year = item.dataset.year ?? "";
+			yearLabel.textContent = year && year !== currentYear ? year : "";
 			if (year) currentYear = year;
 			lastVisibleItem = item;
 		}
 
 		if (lastVisibleItem) {
-			lastVisibleItem.dataset.lastVisible = 'true';
+			lastVisibleItem.dataset.lastVisible = "true";
 		}
 	}
 
 	function matchesRouteFilter(item: HTMLElement) {
 		if (!selectedCategory && !selectedTag) return true;
 
-		const itemTags = item.dataset.tags?.split('|').filter(Boolean) ?? [];
+		const itemTags = item.dataset.tags?.split("|").filter(Boolean) ?? [];
 		return selectedCategory
 			? item.dataset.category === selectedCategory
-			: itemTags.includes(selectedTag ?? '');
+			: itemTags.includes(selectedTag ?? "");
 	}
 
 	function applyPostFilters() {
-		const matchedItems = postItems.filter((item) => matchesRouteFilter(item));
-		const matchedItemIndexes = new Map(matchedItems.map((item, index) => [item, index]));
+		const matchedItems = postItems.filter((item) =>
+			matchesRouteFilter(item),
+		);
+		const matchedItemIndexes = new Map(
+			matchedItems.map((item, index) => [item, index]),
+		);
 		const visibleCount = matchedItems.length;
-		const shouldPaginate = currentViewMode === 'posts';
-		const totalPages = shouldPaginate ? Math.max(1, Math.ceil(visibleCount / pageSize)) : 1;
+		const shouldPaginate = currentViewMode === "posts";
+		const totalPages = shouldPaginate
+			? Math.max(1, Math.ceil(visibleCount / pageSize))
+			: 1;
 
 		currentPage = Math.min(currentPage, totalPages);
 		const pageStart = (currentPage - 1) * pageSize;
@@ -346,7 +507,9 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		for (const item of postItems) {
 			const matchedIndex = matchedItemIndexes.get(item) ?? -1;
 			const isVisible =
-				matchedIndex >= 0 && (!shouldPaginate || (matchedIndex >= pageStart && matchedIndex < pageEnd));
+				matchedIndex >= 0 &&
+				(!shouldPaginate ||
+					(matchedIndex >= pageStart && matchedIndex < pageEnd));
 			item.hidden = !isVisible;
 		}
 
@@ -388,7 +551,7 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 			}
 
 			if (searchPanel) {
-				searchPanel.dataset.searchActive = 'false';
+				searchPanel.dataset.searchActive = "false";
 			}
 
 			return;
@@ -399,15 +562,25 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		for (const result of searchResults) {
 			const matchedField = firstMatchedSearchField(result, searchQuery);
 			const isVisible = Boolean(matchedField);
-			const resultTitle = result.querySelector<HTMLElement>('[data-result-title-text]');
-			const resultPreview = result.querySelector<HTMLElement>('[data-result-preview-text]');
+			const resultTitle = result.querySelector<HTMLElement>(
+				"[data-result-title-text]",
+			);
+			const resultPreview = result.querySelector<HTMLElement>(
+				"[data-result-preview-text]",
+			);
 
 			if (resultTitle) {
-				resultTitle.innerHTML = highlightText(result.dataset.resultTitle ?? '', searchQuery);
+				resultTitle.innerHTML = highlightText(
+					result.dataset.resultTitle ?? "",
+					searchQuery,
+				);
 			}
 
 			if (resultPreview) {
-				resultPreview.innerHTML = highlightText(searchResultPreview(result, matchedField, searchQuery), searchQuery);
+				resultPreview.innerHTML = highlightText(
+					searchResultPreview(result, matchedField, searchQuery),
+					searchQuery,
+				);
 			}
 
 			result.hidden = !isVisible;
@@ -425,33 +598,53 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 
 	function firstMatchedSearchField(result: HTMLElement, query: string) {
 		const fields = [
-			['title', result.dataset.searchTitle ?? ''],
-			['summary', result.dataset.searchSummary ?? ''],
-			['tags', result.dataset.searchTags ?? ''],
-			['body', result.dataset.searchBody ?? ''],
+			["title", result.dataset.searchTitle ?? ""],
+			["summary", result.dataset.searchSummary ?? ""],
+			["tags", result.dataset.searchTags ?? ""],
+			["body", result.dataset.searchBody ?? ""],
 		] as const;
 
-		return fields.find(([, value]) => value.includes(query))?.[0] ?? '';
+		return fields.find(([, value]) => value.includes(query))?.[0] ?? "";
 	}
 
-	function searchResultPreview(result: HTMLElement, matchedField: string, query: string) {
-		if (matchedField === 'summary') {
-			return result.dataset.resultSummary || result.dataset.resultFallback || '';
+	function searchResultPreview(
+		result: HTMLElement,
+		matchedField: string,
+		query: string,
+	) {
+		if (matchedField === "summary") {
+			return (
+				result.dataset.resultSummary ||
+				result.dataset.resultFallback ||
+				""
+			);
 		}
 
-		if (matchedField === 'tags') {
-			return result.dataset.resultTags || result.dataset.resultFallback || '';
+		if (matchedField === "tags") {
+			return (
+				result.dataset.resultTags || result.dataset.resultFallback || ""
+			);
 		}
 
-		if (matchedField === 'body') {
-			return snippetAroundMatch(result.dataset.resultBody || result.dataset.resultFallback || '', query);
+		if (matchedField === "body") {
+			return snippetAroundMatch(
+				result.dataset.resultBody ||
+					result.dataset.resultFallback ||
+					"",
+				query,
+			);
 		}
 
-		return result.dataset.resultFallback || result.dataset.resultSummary || result.dataset.resultBody || '';
+		return (
+			result.dataset.resultFallback ||
+			result.dataset.resultSummary ||
+			result.dataset.resultBody ||
+			""
+		);
 	}
 
 	function snippetAroundMatch(value: string, query: string) {
-		const normalizedValue = value.replace(/\s+/g, ' ').trim();
+		const normalizedValue = value.replace(/\s+/g, " ").trim();
 		if (!query) return normalizedValue;
 
 		const lowerValue = normalizedValue.toLowerCase();
@@ -460,9 +653,12 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 
 		const radius = 72;
 		const start = Math.max(0, matchIndex - radius);
-		const end = Math.min(normalizedValue.length, matchIndex + query.length + radius);
-		const prefix = start > 0 ? '...' : '';
-		const suffix = end < normalizedValue.length ? '...' : '';
+		const end = Math.min(
+			normalizedValue.length,
+			matchIndex + query.length + radius,
+		);
+		const prefix = start > 0 ? "..." : "";
+		const suffix = end < normalizedValue.length ? "..." : "";
 
 		return `${prefix}${normalizedValue.slice(start, end)}${suffix}`;
 	}
@@ -472,8 +668,13 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		let hasVisibleSummary = false;
 
 		for (const summary of tagWikiSummaries) {
-			const referenceKeys = summary.dataset.wikiReferenceKeys?.split('|').filter(Boolean) ?? [];
-			const isVisible = Boolean(tag) && !hasVisibleSummary && referenceKeys.includes(tag ?? '');
+			const referenceKeys =
+				summary.dataset.wikiReferenceKeys?.split("|").filter(Boolean) ??
+				[];
+			const isVisible =
+				Boolean(tag) &&
+				!hasVisibleSummary &&
+				referenceKeys.includes(tag ?? "");
 			summary.hidden = !isVisible;
 			if (isVisible) hasVisibleSummary = true;
 		}
@@ -482,18 +683,18 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 	function escapeHtml(value: string) {
 		return value.replace(/[&<>"']/g, (char) => {
 			const entities: Record<string, string> = {
-				'&': '&amp;',
-				'<': '&lt;',
-				'>': '&gt;',
-				'"': '&quot;',
-				"'": '&#39;',
+				"&": "&amp;",
+				"<": "&lt;",
+				">": "&gt;",
+				'"': "&quot;",
+				"'": "&#39;",
 			};
 			return entities[char];
 		});
 	}
 
 	function escapeRegExp(value: string) {
-		return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 	}
 
 	function highlightText(value: string, query: string) {
@@ -501,13 +702,13 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		if (!query) return escapedValue;
 
 		return escapedValue.replace(
-			new RegExp(`(${escapeRegExp(escapeHtml(query))})`, 'gi'),
-			'<mark>$1</mark>',
+			new RegExp(`(${escapeRegExp(escapeHtml(query))})`, "gi"),
+			"<mark>$1</mark>",
 		);
 	}
 
 	function setViewMode(viewMode: string) {
-		const nextViewMode = viewMode === 'timeline' ? 'timeline' : 'posts';
+		const nextViewMode = viewMode === "timeline" ? "timeline" : "posts";
 		currentViewMode = nextViewMode;
 
 		if (postList) {
@@ -519,18 +720,21 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		}
 
 		for (const button of viewButtons) {
-			button.setAttribute('aria-pressed', String(button.dataset.viewButton === nextViewMode));
+			button.setAttribute(
+				"aria-pressed",
+				String(button.dataset.viewButton === nextViewMode),
+			);
 		}
 
-		window.localStorage.setItem('postViewMode', nextViewMode);
+		window.localStorage.setItem("postViewMode", nextViewMode);
 		applyPostFilters();
 	}
 
 	function scheduleViewMode(viewMode: string) {
-		const nextViewMode = viewMode === 'timeline' ? 'timeline' : 'posts';
+		const nextViewMode = viewMode === "timeline" ? "timeline" : "posts";
 
 		if (postList) {
-			postList.dataset.viewChanging = 'true';
+			postList.dataset.viewChanging = "true";
 		}
 
 		window.requestAnimationFrame(() => {
@@ -545,23 +749,31 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		});
 	}
 
-	setViewMode(window.localStorage.getItem('postViewMode') ?? 'posts');
+	setViewMode(window.localStorage.getItem("postViewMode") ?? "posts");
 
-	window.addEventListener('post-view-mode-change', (event) => {
-		scheduleViewMode(String((event as CustomEvent<string>).detail ?? 'posts'));
+	window.addEventListener("post-view-mode-change", (event) => {
+		scheduleViewMode(
+			String((event as CustomEvent<string>).detail ?? "posts"),
+		);
 	});
 
 	for (const button of pageSizeButtons) {
-		button.setAttribute('aria-pressed', String(Number(button.dataset.pageSizeOption) === pageSize));
-		button.addEventListener('click', () => {
-			pageSize = Number(button.dataset.pageSizeOption ?? '5');
+		button.setAttribute(
+			"aria-pressed",
+			String(Number(button.dataset.pageSizeOption) === pageSize),
+		);
+		button.addEventListener("click", () => {
+			pageSize = Number(button.dataset.pageSizeOption ?? "5");
 			currentPage = 1;
-			window.localStorage.setItem('postPageSize', String(pageSize));
+			window.localStorage.setItem("postPageSize", String(pageSize));
 
 			for (const pageSizeButton of pageSizeButtons) {
 				pageSizeButton.setAttribute(
-					'aria-pressed',
-					String(Number(pageSizeButton.dataset.pageSizeOption) === pageSize),
+					"aria-pressed",
+					String(
+						Number(pageSizeButton.dataset.pageSizeOption) ===
+							pageSize,
+					),
 				);
 			}
 
@@ -569,14 +781,14 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		});
 	}
 
-	mobilePaginationQuery.addEventListener('change', syncMobilePageSize);
+	mobilePaginationQuery.addEventListener("change", syncMobilePageSize);
 
-	pagePrev?.addEventListener('click', () => {
+	pagePrev?.addEventListener("click", () => {
 		currentPage = Math.max(1, currentPage - 1);
 		applyPostFilters();
 	});
 
-	pageNext?.addEventListener('click', () => {
+	pageNext?.addEventListener("click", () => {
 		currentPage += 1;
 		applyPostFilters();
 	});
@@ -600,12 +812,12 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		searchInput?.focus();
 	}
 
-	window.addEventListener('site-search-open', (event) => {
+	window.addEventListener("site-search-open", (event) => {
 		event.preventDefault();
 		openSearchPanel();
 	});
 
-	searchInput?.addEventListener('input', () => {
+	searchInput?.addEventListener("input", () => {
 		searchQuery = searchInput.value.trim().toLowerCase();
 		applySearchResults();
 	});
@@ -628,7 +840,7 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		box-shadow: 0 20px 48px rgba(20, 24, 40, 0.08);
 	}
 
-	:global(html[data-route-filter-pending='true']) .home-post-frame {
+	:global(html[data-route-filter-pending="true"]) .home-post-frame {
 		opacity: 0;
 		pointer-events: none;
 	}
@@ -808,7 +1020,7 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		justify-content: space-between;
 		gap: 16px;
 		margin: -8px 0 18px;
-		padding: 10px 0 14px 16px;
+		padding: 8px 0 16px;
 		border-bottom: 1px solid var(--line);
 		color: var(--text);
 	}
@@ -817,22 +1029,46 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		display: none;
 	}
 
-	.tag-wiki-summary::before {
-		content: '';
-		position: absolute;
-		top: 10px;
-		bottom: 14px;
-		left: 0;
-		width: 3px;
-		border-radius: 999px;
-		background: color-mix(in srgb, var(--accent) 72%, white);
-	}
-
 	.tag-wiki-summary p {
 		margin: 0;
 		color: rgba(0, 0, 0, 0.68);
 		font-size: 14px;
 		line-height: 1.7;
+	}
+
+	.tag-wiki-definitions {
+		display: grid;
+		gap: 11px;
+		min-width: 0;
+	}
+
+	.tag-wiki-definitions section {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		column-gap: 8px;
+		row-gap: 4px;
+		padding-left: 12px;
+		border-left: 2px solid color-mix(in srgb, var(--accent) 68%, white);
+	}
+
+	.tag-wiki-definitions strong {
+		display: contents;
+		color: var(--text);
+		font-size: 13px;
+		line-height: 1.45;
+	}
+
+	.tag-wiki-definitions strong span {
+		color: var(--accent);
+		font-weight: 800;
+	}
+
+	.tag-wiki-definitions p {
+		grid-column: 2;
+		margin: 0;
+		color: var(--muted);
+		font-size: 13px;
+		line-height: 1.65;
 	}
 
 	.tag-wiki-summary a {
@@ -870,7 +1106,7 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		outline: 0;
 	}
 
-	.home-title[data-view-mode='timeline'] .page-size-control {
+	.home-title[data-view-mode="timeline"] .page-size-control {
 		display: none;
 	}
 
@@ -904,14 +1140,14 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 
 	.page-size-control button:hover,
 	.page-size-control button:focus-visible,
-	.page-size-control button[aria-pressed='true'] {
+	.page-size-control button[aria-pressed="true"] {
 		background: color-mix(in srgb, var(--accent) 10%, transparent);
 		color: var(--accent);
 		transform: translateY(-1px);
 		outline: 0;
 	}
 
-	.page-size-control button[aria-pressed='true'] {
+	.page-size-control button[aria-pressed="true"] {
 		transform: none;
 	}
 
@@ -926,7 +1162,7 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 			transform 120ms ease;
 	}
 
-	.home-post-list[data-view-changing='true'] {
+	.home-post-list[data-view-changing="true"] {
 		opacity: 0.42;
 		transform: translateY(3px);
 	}
@@ -959,24 +1195,25 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		outline: 0;
 	}
 
-	.home-post-list[data-view='timeline'] {
+	.home-post-list[data-view="timeline"] {
 		position: relative;
 		gap: 4px;
 		padding-left: 104px;
 	}
 
-	.home-post-list[data-view='timeline'] li {
+	.home-post-list[data-view="timeline"] li {
 		position: relative;
 		min-height: 48px;
 		padding: 0 0 12px;
 	}
 
-	.home-post-list[data-view='timeline'] li:has([data-timeline-year]:not(:empty)) {
+	.home-post-list[data-view="timeline"]
+		li:has([data-timeline-year]:not(:empty)) {
 		padding-top: 38px;
 	}
 
-	.home-post-list[data-view='timeline'] li::before {
-		content: '';
+	.home-post-list[data-view="timeline"] li::before {
+		content: "";
 		position: absolute;
 		top: 14px;
 		left: -28px;
@@ -988,12 +1225,13 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		background: var(--accent);
 	}
 
-	.home-post-list[data-view='timeline'] li:has([data-timeline-year]:not(:empty))::before {
+	.home-post-list[data-view="timeline"]
+		li:has([data-timeline-year]:not(:empty))::before {
 		top: 52px;
 	}
 
-	.home-post-list[data-view='timeline'] li::after {
-		content: '';
+	.home-post-list[data-view="timeline"] li::after {
+		content: "";
 		position: absolute;
 		top: 27px;
 		bottom: -2px;
@@ -1002,23 +1240,24 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		background: var(--line);
 	}
 
-	.home-post-list[data-view='timeline'] li:has([data-timeline-year]:not(:empty))::after {
+	.home-post-list[data-view="timeline"]
+		li:has([data-timeline-year]:not(:empty))::after {
 		top: 65px;
 	}
 
-	.home-post-list[data-view='timeline'] li:last-child {
+	.home-post-list[data-view="timeline"] li:last-child {
 		padding-bottom: 0;
 	}
 
-	.home-post-list[data-view='timeline'] li:last-child::after {
+	.home-post-list[data-view="timeline"] li:last-child::after {
 		display: none;
 	}
 
-	.home-post-list[data-view='timeline'] li[data-last-visible='true']::after {
+	.home-post-list[data-view="timeline"] li[data-last-visible="true"]::after {
 		display: none;
 	}
 
-	.home-post-list[data-view='timeline'] a {
+	.home-post-list[data-view="timeline"] a {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
@@ -1031,11 +1270,11 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		overflow: visible;
 	}
 
-	.home-post-list[data-view='timeline'] a:hover {
+	.home-post-list[data-view="timeline"] a:hover {
 		box-shadow: 0 12px 28px rgba(20, 24, 40, 0.08);
 	}
 
-	.home-post-list[data-view='timeline'] a:focus-visible {
+	.home-post-list[data-view="timeline"] a:focus-visible {
 		box-shadow: 0 12px 28px rgba(45, 84, 255, 0.12);
 		outline: 0;
 	}
@@ -1044,7 +1283,7 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		display: none;
 	}
 
-	.home-post-list[data-view='timeline'] .timeline-date {
+	.home-post-list[data-view="timeline"] .timeline-date {
 		position: absolute;
 		top: 0;
 		left: -104px;
@@ -1057,7 +1296,7 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		text-align: right;
 	}
 
-	.home-post-list[data-view='timeline'] .timeline-date strong {
+	.home-post-list[data-view="timeline"] .timeline-date strong {
 		position: absolute;
 		top: 5px;
 		left: 0;
@@ -1068,14 +1307,17 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		text-align: right;
 	}
 
-	.home-post-list[data-view='timeline'] .timeline-date span {
+	.home-post-list[data-view="timeline"] .timeline-date span {
 		display: block;
 		padding-top: 12px;
 		color: var(--muted);
 		font-size: 12px;
 	}
 
-	.home-post-list[data-view='timeline'] li:has([data-timeline-year]:not(:empty)) .timeline-date span {
+	.home-post-list[data-view="timeline"]
+		li:has([data-timeline-year]:not(:empty))
+		.timeline-date
+		span {
 		padding-top: 50px;
 	}
 
@@ -1088,7 +1330,7 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 	}
 
 	.home-post-title::after {
-		content: '';
+		content: "";
 		display: block;
 		width: 30px;
 		height: 2px;
@@ -1097,7 +1339,7 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		background: color-mix(in srgb, var(--accent) 72%, white);
 	}
 
-	.home-post-list[data-view='timeline'] .home-post-title {
+	.home-post-list[data-view="timeline"] .home-post-title {
 		flex: 0 1 auto;
 		min-width: 0;
 		margin: 0;
@@ -1108,7 +1350,7 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		text-decoration: none;
 	}
 
-	.home-post-list[data-view='timeline'] .home-post-title::after {
+	.home-post-list[data-view="timeline"] .home-post-title::after {
 		display: none;
 	}
 
@@ -1123,7 +1365,7 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		overflow: hidden;
 	}
 
-	.home-post-list[data-view='timeline'] p {
+	.home-post-list[data-view="timeline"] p {
 		display: none;
 	}
 
@@ -1148,7 +1390,7 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		font-size: 12px;
 	}
 
-	.home-post-list[data-view='timeline'] .home-post-meta {
+	.home-post-list[data-view="timeline"] .home-post-meta {
 		flex: 1 0 auto;
 		justify-content: flex-end;
 		gap: 5px;
@@ -1156,9 +1398,9 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		font-size: 12px;
 	}
 
-	.home-post-list[data-view='timeline'] .home-post-meta time,
-	.home-post-list[data-view='timeline'] .home-post-meta i,
-	.home-post-list[data-view='timeline'] .home-post-meta > span {
+	.home-post-list[data-view="timeline"] .home-post-meta time,
+	.home-post-list[data-view="timeline"] .home-post-meta i,
+	.home-post-list[data-view="timeline"] .home-post-meta > span {
 		display: none;
 	}
 
@@ -1181,11 +1423,11 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		overflow-wrap: anywhere;
 	}
 
-	.home-post-list[data-view='timeline'] .home-post-tags {
+	.home-post-list[data-view="timeline"] .home-post-tags {
 		gap: 6px;
 	}
 
-	.home-post-list[data-view='timeline'] .home-post-tags em {
+	.home-post-list[data-view="timeline"] .home-post-tags em {
 		padding: 0;
 		background: transparent;
 		color: var(--muted);
@@ -1193,8 +1435,8 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 		font-weight: 400;
 	}
 
-	.home-post-list[data-view='timeline'] .home-post-tags em::before {
-		content: '#';
+	.home-post-list[data-view="timeline"] .home-post-tags em::before {
+		content: "#";
 	}
 
 	.empty-filter {
@@ -1275,16 +1517,16 @@ function wikiEntryReferenceKeys(entry: (typeof wikiEntries)[number]) {
 			display: none;
 		}
 
-		.home-post-list[data-view='timeline'] {
+		.home-post-list[data-view="timeline"] {
 			padding-left: 82px;
 		}
 
-		.home-post-list[data-view='timeline'] .timeline-date {
+		.home-post-list[data-view="timeline"] .timeline-date {
 			left: -82px;
 			width: 50px;
 		}
 
-		.home-post-list[data-view='timeline'] .timeline-date strong {
+		.home-post-list[data-view="timeline"] .timeline-date strong {
 			font-size: 17px;
 		}
 	}
