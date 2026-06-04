@@ -19,6 +19,7 @@ Astro 6 기반의 정적 개인 블로그입니다. Obsidian에서 작성한 Mar
 사용자는 기본적으로 Git Bash를 사용하므로 문서와 안내 명령은 Git Bash 기준으로 작성합니다.
 
 pre-commit 훅에서는 `node scripts/update-readme.mjs --staged`를 사용합니다. 이 모드는 파일시스템 전체가 아니라 Git index에 스테이징된 `content/post/**/*.md` 상태만 읽어서 README를 갱신합니다. 따라서 커밋에 포함되지 않는 미스테이징 글은 README에 반영하지 않습니다.
+Wiki는 pre-commit 훅에서 `node scripts/update-wiki-defines.mjs --staged`를 먼저 실행합니다. 이 스크립트는 Git index에 스테이징된 `content/wiki/**/*.md` 파일의 본문을 읽고, 각 `##` 제목 바로 아래 첫 문장을 `defines` frontmatter로 동기화합니다.
 
 ## 주요 디렉터리
 
@@ -72,16 +73,15 @@ Wiki 항목은 `content/wiki/**/*.md`에 둡니다. 현재 권장 frontmatter:
 
 ```yaml
 ---
-define: 짧은 정의
-tags:
-  - example
+defines:
+  - 제목: 정의
 ---
 ```
 
-- `define`이 Wiki 카드와 상세 페이지의 핵심 설명으로 사용됩니다.
-- `define`이 없으면 `description`, 본문 첫 줄 순서로 설명을 사용합니다.
+- `defines`가 Wiki 카드, 상세 페이지, 툴팁의 정의 목록으로 사용됩니다.
+- commit 시점에는 본문의 각 `##` 제목과 그 바로 아래 첫 문장이 `defines`로 자동 반영됩니다.
+- `defines`가 없으면 `define`, `description`, 본문 첫 줄 순서로 대표 설명을 사용합니다.
 - 파일명에서 확장자를 제거한 값이 기본 항목명입니다.
-- `tags`에 다른 Wiki 항목의 slug 또는 title을 넣으면 상세 페이지 하단에 관련 Wiki 링크가 표시됩니다.
 - `/wiki/`의 카드는 `/wiki/[slug]/` 상세 페이지로 이동합니다.
 
 ## UI 흐름
