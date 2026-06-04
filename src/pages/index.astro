@@ -1518,11 +1518,54 @@ function wikiDefinitions(entry: (typeof wikiEntries)[number]) {
 		}
 
 		.home-post-list[data-view="timeline"] {
-			padding-left: 82px;
+			padding-left: 0;
+		}
+
+		.home-post-list[data-view="timeline"] li {
+			width: 100%;
+			max-width: 100%;
+			min-width: 0;
+		}
+
+		.home-post-list[data-view="timeline"] li::before {
+			left: 58px;
+		}
+
+		.home-post-list[data-view="timeline"] li::after {
+			left: 63px;
+		}
+
+		.home-post-list[data-view="timeline"] a {
+			width: calc(100% - 82px);
+			box-sizing: border-box;
+			margin-left: 82px;
+			min-width: 0;
+			max-width: 100%;
+			justify-content: flex-start;
+			overflow: hidden;
+		}
+
+		.home-post-list[data-view="timeline"] .home-post-meta {
+			display: none;
+		}
+
+		.home-post-list[data-view="timeline"] .home-post-tags {
+			display: none;
+		}
+
+		.home-post-list[data-view="timeline"] .home-post-title {
+			display: block;
+			flex: 1 1 0;
+			width: 100%;
+			min-width: 0;
+			max-width: 100%;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
 		}
 
 		.home-post-list[data-view="timeline"] .timeline-date {
-			left: -82px;
+			left: 0;
 			width: 50px;
 		}
 
