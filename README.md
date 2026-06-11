@@ -16,11 +16,10 @@
 
 | 태그 | 게시글 수 |
 | --- | ---: |
-| android | 1 |
 | architecture | 1 |
 | blog | 1 |
-| mvi | 1 |
-| mvvm | 1 |
+| design_pattern | 1 |
+| mvw | 1 |
 
 <!-- BLOG_STATS_END -->
 
@@ -30,7 +29,7 @@
 
 | 날짜 | 제목 | 태그 |
 | --- | --- | --- |
-| 2026-06-04 | [0001 - Android UI Architecture](content/post/0001%20-%20Android%20UI%20Architecture.md) | android, architecture, mvvm, mvi |
+| 2026-06-05 | [0001 - MVW Architecture](content/post/0001%20-%20MVW%20Architecture.md) | architecture, design_pattern, mvw |
 
 <!-- TIL_STATS_END -->
 
