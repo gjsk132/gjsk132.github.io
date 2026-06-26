@@ -1,5 +1,4 @@
 node scripts/convert-images.mjs
 node scripts/update-wiki-defines.mjs --staged
-git add content/wiki
 node scripts/update-readme.mjs --staged
 git add README.md

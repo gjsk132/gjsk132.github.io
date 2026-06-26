@@ -192,10 +192,17 @@ if (USE_STAGED) {
   }
 }
 
-let updatedCount = 0;
+const updatedFiles = [];
 
 for (const filePath of wikiFiles) {
-  if (updateWikiFile(filePath)) updatedCount += 1;
+  if (updateWikiFile(filePath)) updatedFiles.push(filePath);
 }
 
-console.log(`Wiki defines updated in ${updatedCount} ${USE_STAGED ? "staged " : ""}file(s).`);
+// staged 모드에서는 이 스크립트가 실제로 고친 (이미 staged였던) 파일만 다시 stage한다.
+// pre-commit에서 `git add content/wiki`로 디렉터리 전체를 stage하면 커밋 의도가 없던
+// unstaged 위키 파일까지 딸려 들어가므로, 대상 파일만 좁혀서 add한다.
+if (USE_STAGED && updatedFiles.length > 0) {
+  execGit(["add", "--", ...updatedFiles]);
+}
+
+console.log(`Wiki defines updated in ${updatedFiles.length} ${USE_STAGED ? "staged " : ""}file(s).`);

@@ -18,7 +18,7 @@
 | --- | ---: |
 | architecture | 1 |
 | blog | 1 |
-| design_pattern | 1 |
+| design pattern | 1 |
 | mvw | 1 |
 
 <!-- BLOG_STATS_END -->
@@ -29,7 +29,7 @@
 
 | 날짜 | 제목 | 태그 |
 | --- | --- | --- |
-| 2026-06-05 | [0001 - MVW Architecture](content/post/0001%20-%20MVW%20Architecture.md) | architecture, design_pattern, mvw |
+| 2026-06-05 | [0001 - MVW Architecture](content/post/0001%20-%20MVW%20Architecture.md) | architecture, design pattern, mvw |
 
 <!-- TIL_STATS_END -->
 

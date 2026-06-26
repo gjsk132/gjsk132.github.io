@@ -44,23 +44,13 @@ function getStagedFiles() {
         .filter(Boolean);
 }
 
-function walk(dir) {
-    if (!fs.existsSync(dir)) return [];
+function isMarkdownFile(filePath) {
+    const ext = path.extname(filePath).toLowerCase();
+    const normalizedPath = filePath.replaceAll("\\", "/");
 
-    const result = [];
+    if (ext !== ".md" && ext !== ".mdx") return false;
 
-    for (const file of fs.readdirSync(dir)) {
-        const fullPath = path.join(dir, file);
-        const stat = fs.statSync(fullPath);
-
-        if (stat.isDirectory()) {
-            result.push(...walk(fullPath));
-        } else {
-            result.push(fullPath);
-        }
-    }
-
-    return result;
+    return normalizedPath.startsWith(`${CONTENT_DIR}/`);
 }
 
 function isConvertibleImage(filePath) {
@@ -102,12 +92,7 @@ async function convertImage(filePath) {
     };
 }
 
-function updateMarkdownLinks(convertedImages) {
-    const mdFiles = walk(CONTENT_DIR).filter((file) => {
-        const ext = path.extname(file).toLowerCase();
-        return ext === ".md" || ext === ".mdx";
-    });
-
+function updateMarkdownLinks(convertedImages, mdFiles) {
     const updatedMdFiles = [];
 
     for (const mdFile of mdFiles) {
@@ -177,7 +162,10 @@ async function main() {
         return;
     }
 
-    const updatedMdFiles = updateMarkdownLinks(convertedImages);
+    // staged된 content md만 링크를 갱신·stage한다. 전체 md를 훑으면 커밋 의도가 없던
+    // unstaged post/wiki 파일까지 수정·stage되므로 대상을 staged 파일로 좁힌다.
+    const stagedMdFiles = stagedFiles.filter(isMarkdownFile);
+    const updatedMdFiles = updateMarkdownLinks(convertedImages, stagedMdFiles);
 
     stageConvertedFiles(convertedImages, updatedMdFiles);
 
