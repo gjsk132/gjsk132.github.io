@@ -46,6 +46,13 @@ function stripFrontmatter(rawPost: string) {
 	return rawPost.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '');
 }
 
+function normalizeTags(tags: BlogPostFrontmatter['tags']) {
+	if (!tags) return tags;
+	const items = Array.isArray(tags) ? tags : [tags];
+
+	return [...new Set(items.map((tag) => String(tag).replace(/_+/g, ' ').trim()).filter(Boolean))];
+}
+
 function firstBodyLine(rawPost: string) {
 	return stripFrontmatter(rawPost)
 		.split(/\r?\n/)
@@ -62,11 +69,12 @@ export async function getAllPosts() {
 		Object.entries(postModules).map(async ([path, loadPost]) => {
 			const mod = await loadPost();
 			const rawPost = rawPostModules[path] ? await rawPostModules[path]() : '';
+			const frontmatter = mod.frontmatter ?? {};
 
 			return {
 				slug: slugFromPath(path),
-				frontmatter: mod.frontmatter ?? {},
-				excerpt: postExcerpt(mod.frontmatter ?? {}, rawPost),
+				frontmatter: { ...frontmatter, tags: normalizeTags(frontmatter.tags) },
+				excerpt: postExcerpt(frontmatter, rawPost),
 				body: stripFrontmatter(rawPost),
 				Content: mod.Content,
 			};

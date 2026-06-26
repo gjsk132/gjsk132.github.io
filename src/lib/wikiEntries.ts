@@ -129,7 +129,7 @@ function normalizeTags(tags: WikiEntryFrontmatter['tags']) {
 	if (!tags) return [];
 	const items = Array.isArray(tags) ? tags : [tags];
 
-	return [...new Set(items.map((tag) => String(tag).trim()).filter(Boolean))];
+	return [...new Set(items.map((tag) => String(tag).replace(/_+/g, ' ').trim()).filter(Boolean))];
 }
 
 function plainBody(body: string) {

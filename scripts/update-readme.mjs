@@ -84,7 +84,9 @@ function parseFrontmatter(raw) {
 function normalizePost(filePath) {
   const raw = readPostFile(filePath);
   const frontmatter = parseFrontmatter(raw);
-  const tags = Array.isArray(frontmatter.tags) ? frontmatter.tags.filter(Boolean) : [];
+  const tags = Array.isArray(frontmatter.tags)
+    ? frontmatter.tags.map((tag) => String(tag).replace(/_+/g, " ").trim()).filter(Boolean)
+    : [];
 
   return {
     title: path.basename(filePath, path.extname(filePath)),
