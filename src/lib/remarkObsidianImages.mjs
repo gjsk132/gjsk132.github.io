@@ -5,9 +5,11 @@ const urlPattern = /^[a-z][a-z\d+.-]*:|^\/|^#|^\.\.\/asset\//i;
 
 function assetUrlFor(filePath, imageName) {
 	const parsed = path.parse(filePath);
-	const postName = parsed.name;
+	const noteName = parsed.name;
+	const folderName = path.basename(parsed.dir);
+	const prefix = folderName ? `${folderName}/` : '';
 
-	return `../asset/${postName}/${imageName.trim()}`;
+	return `../asset/${prefix}${noteName}/${imageName.trim()}`;
 }
 
 function convertTextNode(node, filePath) {
