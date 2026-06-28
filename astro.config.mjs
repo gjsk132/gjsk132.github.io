@@ -1,6 +1,7 @@
 // @ts-check
 import { unified } from '@astrojs/markdown-remark';
 import { defineConfig } from 'astro/config';
+import remarkGfm from 'remark-gfm';
 import { remarkObsidianImages } from './src/lib/remarkObsidianImages.mjs';
 
 // 연속된 공백 중 첫 칸만 일반 공백으로 두고 나머지는 non-breaking space로 바꿔
@@ -103,7 +104,7 @@ export default defineConfig({
 			theme: 'github-dark',
 		},
 		processor: unified({
-			remarkPlugins: [remarkObsidianImages, remarkPreserveBlankLines, remarkPreserveSpaces, remarkSingleLineBreaks],
+			remarkPlugins: [remarkGfm, remarkObsidianImages, remarkPreserveBlankLines, remarkPreserveSpaces, remarkSingleLineBreaks],
 		}),
 	},
 });

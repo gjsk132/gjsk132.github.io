@@ -29,7 +29,7 @@
 
 | 날짜 | 제목 | 태그 |
 | --- | --- | --- |
-| 2026-06-05 | [0001 - MVW Architecture](content/post/0001%20-%20MVW%20Architecture.md) | architecture, design pattern, mvw |
+| 2026-06-28 | [0001 - MVW Architecture](content/post/0001%20-%20MVW%20Architecture.md) | architecture, design pattern, mvw |
 
 <!-- TIL_STATS_END -->
 
