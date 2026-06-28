@@ -324,6 +324,48 @@ const wikiTermEntries = entries.filter((item) => item.slug !== entry.slug);
 		border-radius: 16px;
 	}
 
+	.article-content :global(table) {
+		display: block;
+		width: max-content;
+		max-width: 100%;
+		margin: 22px 0;
+		overflow-x: auto;
+		border: 1px solid var(--line);
+		border-radius: 12px;
+		border-spacing: 0;
+		font-size: 13.5px;
+	}
+
+	.article-content :global(th),
+	.article-content :global(td) {
+		padding: 9px 14px;
+		border-right: 1px solid var(--line);
+		border-bottom: 1px solid var(--line);
+		text-align: left;
+		vertical-align: top;
+		line-height: 1.65;
+		overflow-wrap: anywhere;
+	}
+
+	.article-content :global(th:last-child),
+	.article-content :global(td:last-child) {
+		border-right: 0;
+	}
+
+	.article-content :global(tbody tr:last-child td) {
+		border-bottom: 0;
+	}
+
+	.article-content :global(thead th) {
+		background: color-mix(in srgb, var(--accent) 8%, white);
+		font-weight: 700;
+		color: var(--text);
+	}
+
+	.article-content :global(tbody tr:nth-child(even)) {
+		background: color-mix(in srgb, var(--accent) 3.5%, white);
+	}
+
 	.article-content :global(pre) {
 		overflow-x: auto;
 		margin: 22px 0;
