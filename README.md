@@ -8,18 +8,19 @@
 
 | 카테고리 | 게시글 수 |
 | --- | ---: |
-| 전체 | 2 |
-| TIL | 1 |
+| 전체 | 3 |
+| TIL | 2 |
 | 블로그 | 1 |
 
 ### 태그별 게시글 수
 
 | 태그 | 게시글 수 |
 | --- | ---: |
-| architecture | 1 |
+| architecture | 2 |
 | blog | 1 |
 | design pattern | 1 |
 | mvw | 1 |
+| SDUI | 1 |
 
 <!-- BLOG_STATS_END -->
 
@@ -29,6 +30,7 @@
 
 | 날짜 | 제목 | 태그 |
 | --- | --- | --- |
+| 2026-07-05 | [0002 - SDUI](content/post/0002%20-%20SDUI.md) | SDUI, architecture |
 | 2026-06-28 | [0001 - MVW Architecture](content/post/0001%20-%20MVW%20Architecture.md) | architecture, design pattern, mvw |
 
 <!-- TIL_STATS_END -->
