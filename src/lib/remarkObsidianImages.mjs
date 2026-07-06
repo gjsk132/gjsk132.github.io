@@ -4,6 +4,16 @@ const imagePattern = /!\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 const urlPattern = /^[a-z][a-z\d+.-]*:|^\/|^#|^\.\.\/asset\//i;
 const sizePattern = /^(\d+)(?:x(\d+))?$/;
 
+// Obsidian 'Custom Attachment Location' 플러그인은 첨부 폴더명을 만들 때
+// 아래 특수문자(플러그인 설정 specialCharacters: "#^[]|*\<>:?/")를 '-'로 치환한다.
+// 노트 파일명에 이 문자가 있으면 실제 생성된 폴더명과 어긋나므로, 경로를 만들 때
+// 동일한 규칙으로 치환해 맞춰준다. (플러그인 설정이 바뀌면 여기도 함께 맞춰야 함)
+const OBSIDIAN_SPECIAL_CHARS = /[#^[\]|*\\<>:?\/]/g;
+
+function sanitizeForAttachmentFolder(name) {
+	return name.replace(OBSIDIAN_SPECIAL_CHARS, '-');
+}
+
 // 지정한 표시 크기의 몇 배 해상도로 실제 이미지를 생성할지.
 // 화면에는 작게 보여주되, 클릭해 확대할 때 화질이 깨지지 않도록 여유 해상도를 확보한다.
 // (Astro는 원본보다 크게 업스케일하지 않으므로 원본 해상도가 상한이 된다.)
@@ -39,8 +49,8 @@ function parseMeta(rawMeta, imageName) {
 
 function assetUrlFor(filePath, imageName) {
 	const parsed = path.parse(filePath);
-	const noteName = parsed.name;
-	const folderName = path.basename(parsed.dir);
+	const noteName = sanitizeForAttachmentFolder(parsed.name);
+	const folderName = sanitizeForAttachmentFolder(path.basename(parsed.dir));
 	const prefix = folderName ? `${folderName}/` : '';
 
 	return `../asset/${prefix}${noteName}/${imageName.trim()}`;
