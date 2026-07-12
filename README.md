@@ -8,8 +8,8 @@
 
 | 카테고리 | 게시글 수 |
 | --- | ---: |
-| 전체 | 6 |
-| TIL | 2 |
+| 전체 | 7 |
+| TIL | 3 |
 | 블로그 | 1 |
 | PS | 3 |
 
@@ -18,9 +18,14 @@
 | 태그 | 게시글 수 |
 | --- | ---: |
 | 프로그래머스 | 3 |
-| architecture | 2 |
+| Android | 1 |
+| architecture | 3 |
 | blog | 1 |
 | design pattern | 1 |
+| DI | 1 |
+| DIP | 1 |
+| Hilt | 1 |
+| IoC | 1 |
 | mvw | 1 |
 | python | 3 |
 | SDUI | 1 |
@@ -33,6 +38,7 @@
 
 | 날짜 | 제목 | 태그 |
 | --- | --- | --- |
+| 2026-07-12 | [0003 - DI](content/post/0003%20-%20DI.md) | DI, DIP, IoC, Hilt, Android, architecture |
 | 2026-07-05 | [0002 - SDUI](content/post/0002%20-%20SDUI.md) | SDUI, architecture |
 | 2026-06-28 | [0001 - MVW Architecture](content/post/0001%20-%20MVW%20Architecture.md) | architecture, design pattern, mvw |
 
