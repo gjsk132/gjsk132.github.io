@@ -8,8 +8,8 @@
 
 | 카테고리 | 게시글 수 |
 | --- | ---: |
-| 전체 | 8 |
-| TIL | 4 |
+| 전체 | 9 |
+| TIL | 5 |
 | 블로그 | 1 |
 | PS | 3 |
 
@@ -25,12 +25,17 @@
 | DI | 1 |
 | DIP | 1 |
 | Domain | 1 |
+| error-handling | 1 |
 | Hilt | 1 |
 | IoC | 1 |
+| kotlin | 1 |
 | mvw | 1 |
 | python | 3 |
 | Repository | 1 |
 | SDUI | 1 |
+| sealed-class | 1 |
+| sealed-interface | 1 |
+| UI State | 1 |
 | UseCase | 1 |
 
 <!-- BLOG_STATS_END -->
@@ -41,6 +46,7 @@
 
 | 날짜 | 제목 | 태그 |
 | --- | --- | --- |
+| 2026-07-26 | [0005 - sealed class로 상태와 에러 표현하기](content/post/0005%20-%20sealed%20class%EB%A1%9C%20%EC%83%81%ED%83%9C%EC%99%80%20%EC%97%90%EB%9F%AC%20%ED%91%9C%ED%98%84%ED%95%98%EA%B8%B0.md) | sealed-class, sealed-interface, UI State, error-handling, kotlin |
 | 2026-07-19 | [0004 - Repository와 데이터 흐름](content/post/0004%20-%20Repository%EC%99%80%20%EB%8D%B0%EC%9D%B4%ED%84%B0%20%ED%9D%90%EB%A6%84.md) | Repository, UseCase, Domain, architecture |
 | 2026-07-12 | [0003 - DI](content/post/0003%20-%20DI.md) | DI, DIP, IoC, Hilt, Android, architecture |
 | 2026-07-05 | [0002 - SDUI](content/post/0002%20-%20SDUI.md) | SDUI, architecture |
