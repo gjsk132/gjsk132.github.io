@@ -8,8 +8,8 @@
 
 | 카테고리 | 게시글 수 |
 | --- | ---: |
-| 전체 | 10 |
-| TIL | 6 |
+| 전체 | 11 |
+| TIL | 7 |
 | 블로그 | 1 |
 | PS | 3 |
 
@@ -18,17 +18,21 @@
 | 태그 | 게시글 수 |
 | --- | ---: |
 | 프로그래머스 | 3 |
+| android | 1 |
 | Android | 1 |
+| App-Link | 1 |
 | architecture | 5 |
 | backend-for-frontend | 1 |
 | BFF | 1 |
 | blog | 1 |
+| Deep-Link | 1 |
 | design pattern | 1 |
 | DI | 1 |
 | DIP | 1 |
 | Domain | 1 |
 | error-handling | 1 |
 | Hilt | 1 |
+| Intent | 1 |
 | IoC | 1 |
 | kotlin | 1 |
 | mvw | 1 |
@@ -38,6 +42,7 @@
 | sealed-class | 1 |
 | sealed-interface | 1 |
 | UI State | 1 |
+| URI | 1 |
 | UseCase | 1 |
 
 <!-- BLOG_STATS_END -->
@@ -48,6 +53,7 @@
 
 | 날짜 | 제목 | 태그 |
 | --- | --- | --- |
+| 2026-08-15 | [0007 - Deep Link와 App Link](content/post/0007%20-%20Deep%20Link%EC%99%80%20App%20Link.md) | Deep-Link, App-Link, URI, Intent, android |
 | 2026-08-02 | [0006 - BFF (Backend for Frontend)](content/post/0006%20-%20BFF%20(Backend%20for%20Frontend).md) | BFF, backend-for-frontend, architecture, SDUI |
 | 2026-07-26 | [0005 - sealed class로 상태와 에러 표현하기](content/post/0005%20-%20sealed%20class%EB%A1%9C%20%EC%83%81%ED%83%9C%EC%99%80%20%EC%97%90%EB%9F%AC%20%ED%91%9C%ED%98%84%ED%95%98%EA%B8%B0.md) | sealed-class, sealed-interface, UI State, error-handling, kotlin |
 | 2026-07-19 | [0004 - Repository와 데이터 흐름](content/post/0004%20-%20Repository%EC%99%80%20%EB%8D%B0%EC%9D%B4%ED%84%B0%20%ED%9D%90%EB%A6%84.md) | Repository, UseCase, Domain, architecture |
