@@ -8,8 +8,8 @@
 
 | 카테고리 | 게시글 수 |
 | --- | ---: |
-| 전체 | 12 |
-| TIL | 8 |
+| 전체 | 13 |
+| TIL | 9 |
 | 블로그 | 1 |
 | PS | 3 |
 
@@ -18,7 +18,7 @@
 | 태그 | 게시글 수 |
 | --- | ---: |
 | 프로그래머스 | 3 |
-| android | 2 |
+| android | 3 |
 | Android | 1 |
 | App-Link | 1 |
 | architecture | 5 |
@@ -39,9 +39,13 @@
 | lazy-layout | 1 |
 | LazyColumn | 1 |
 | LazyGrid | 1 |
+| log-level | 1 |
+| logging | 1 |
+| metrics | 1 |
 | mvw | 1 |
-| performance | 1 |
+| performance | 2 |
 | python | 3 |
+| QA | 1 |
 | Repository | 1 |
 | SDUI | 2 |
 | sealed-class | 1 |
@@ -58,6 +62,7 @@
 
 | 날짜 | 제목 | 태그 |
 | --- | --- | --- |
+| 2026-09-06 | [0009 - 로깅](content/post/0009%20-%20%EB%A1%9C%EA%B9%85.md) | logging, log-level, QA, metrics, performance, android |
 | 2026-08-21 | [0008 - Lazy Layout](content/post/0008%20-%20Lazy%20Layout.md) | LazyColumn, LazyGrid, Jetpack-Compose, lazy-layout, performance, android |
 | 2026-08-15 | [0007 - Deep Link와 App Link](content/post/0007%20-%20Deep%20Link%EC%99%80%20App%20Link.md) | Deep-Link, App-Link, URI, Intent, android |
 | 2026-08-02 | [0006 - BFF (Backend for Frontend)](content/post/0006%20-%20BFF%20(Backend%20for%20Frontend).md) | BFF, backend-for-frontend, architecture, SDUI |
