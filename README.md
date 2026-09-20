@@ -8,8 +8,8 @@
 
 | 카테고리 | 게시글 수 |
 | --- | ---: |
-| 전체 | 13 |
-| TIL | 9 |
+| 전체 | 14 |
+| TIL | 10 |
 | 블로그 | 1 |
 | PS | 3 |
 
@@ -18,7 +18,8 @@
 | 태그 | 게시글 수 |
 | --- | ---: |
 | 프로그래머스 | 3 |
-| android | 3 |
+| ab-test | 1 |
+| android | 4 |
 | Android | 1 |
 | App-Link | 1 |
 | architecture | 5 |
@@ -31,6 +32,8 @@
 | DIP | 1 |
 | Domain | 1 |
 | error-handling | 1 |
+| experimentation | 1 |
+| feature-flag | 1 |
 | Hilt | 1 |
 | Intent | 1 |
 | IoC | 1 |
@@ -41,7 +44,7 @@
 | LazyGrid | 1 |
 | log-level | 1 |
 | logging | 1 |
-| metrics | 1 |
+| metrics | 2 |
 | mvw | 1 |
 | performance | 2 |
 | python | 3 |
@@ -62,6 +65,7 @@
 
 | 날짜 | 제목 | 태그 |
 | --- | --- | --- |
+| 2026-09-20 | [0010 - Feature Flag와 AB Test](content/post/0010%20-%20Feature%20Flag%EC%99%80%20AB%20Test.md) | feature-flag, ab-test, experimentation, metrics, android |
 | 2026-09-06 | [0009 - 로깅](content/post/0009%20-%20%EB%A1%9C%EA%B9%85.md) | logging, log-level, QA, metrics, performance, android |
 | 2026-08-21 | [0008 - Lazy Layout](content/post/0008%20-%20Lazy%20Layout.md) | LazyColumn, LazyGrid, Jetpack-Compose, lazy-layout, performance, android |
 | 2026-08-15 | [0007 - Deep Link와 App Link](content/post/0007%20-%20Deep%20Link%EC%99%80%20App%20Link.md) | Deep-Link, App-Link, URI, Intent, android |
